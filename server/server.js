@@ -87,20 +87,7 @@ app.get('/api/health', (req, res) => {
 
 // ─── Root ─────────────────────────────────────────────────────
 app.get('/', (req, res) => {
-    res.json({
-        message: 'TecAce AI Interview Server',
-        version: '1.0.0',
-        endpoints: {
-            health: '/api/health',
-            settings: '/api/settings',
-            jobs: '/api/jobs',
-            candidates: '/api/candidates',
-            interviews: '/api/interviews',
-            ai: '/api/ai',
-            stats: '/api/stats',
-            interviewApp: '/interview?token=YOUR_TOKEN'
-        }
-    });
+    res.redirect('/admin');
 });
 
 // ─── Error Handler ───────────────────────────────────────────
