@@ -72,41 +72,57 @@ export default function InterviewResultPanel({ initialCandidateId }) {
     };
 
     const handleExportExcel = () => {
-        if (!resultData || !resultData.ai_analysis) return;
+        if (!resultData || !resultData.ai_analysis || !candidateInfo) {
+            showToast('데이터가 로드되지 않았습니다.', 'error');
+            return;
+        }
+        
         const { overallScore, recommendation, summary, strengths = [], improvements = [], answerAnalysis = [] } = resultData.ai_analysis;
 
-        // Q10(index 9) 항목 조건부 필터링
-        const exportAnswers = includeSalary ? answerAnalysis : answerAnalysis.filter((_, i) => i !== 9);
+        // 희망연봉/처우 관련 질문 키워드로 찾기 (하드코딩 인덱스 9 대신)
+        // 만약 includeSalary가 false이면 해당 키워드가 포함된 질문을 제외
+        const exportAnswers = includeSalary 
+            ? answerAnalysis 
+            : answerAnalysis.filter(a => !(a.question.includes('연봉') || a.question.includes('처우')));
 
         const infoData = [
-            ['항목', '내용'],
+            ['[면접 종합 분석 결과]', ''],
             ['지원자 이름', candidateInfo.name],
             ['이메일', candidateInfo.email],
             ['지원 직무', candidateInfo.job_title],
             ['구분', candidateInfo.department || '—'],
+            ['', ''],
             ['AI 종합 점수', overallScore],
             ['추천 결과', recommendation],
             ['종합 평가', summary],
+            ['', ''],
             ['주요 강점', strengths.join('\n')],
             ['개선 및 참고사항', improvements.join('\n')]
         ];
 
-        const qnaData = [['문항 번호', '질문 내용', '지원자 답변', 'AI 평가 (피드백)', '부분 점수']];
+        const qnaData = [['번호', '질문 내용', '지원자 답변', 'AI 상세 평가 (피드백)', '부분 점수']];
         exportAnswers.forEach((a, index) => {
-            qnaData.push([`Q${index + 1}`, a.question, a.answer, a.feedback, a.score]);
+            qnaData.push([index + 1, a.question, a.answer || '(답변 없음)', a.feedback, a.score]);
         });
 
-        const wb = XLSX.utils.book_new();
-        const wsInfo = XLSX.utils.aoa_to_sheet(infoData);
-        const wsQnA = XLSX.utils.aoa_to_sheet(qnaData);
-        
-        // 시트 스타일링 (열 너비 조절)
-        wsInfo['!cols'] = [{ wch: 20 }, { wch: 80 }];
-        wsQnA['!cols'] = [{ wch: 10 }, { wch: 40 }, { wch: 60 }, { wch: 60 }, { wch: 10 }];
+        try {
+            const wb = XLSX.utils.book_new();
+            const wsInfo = XLSX.utils.aoa_to_sheet(infoData);
+            const wsQnA = XLSX.utils.aoa_to_sheet(qnaData);
+            
+            wsInfo['!cols'] = [{ wch: 20 }, { wch: 100 }];
+            wsQnA['!cols'] = [{ wch: 8 }, { wch: 50 }, { wch: 60 }, { wch: 80 }, { wch: 10 }];
 
-        XLSX.utils.book_append_sheet(wb, wsInfo, "면접 종합 결과");
-        XLSX.utils.book_append_sheet(wb, wsQnA, "질문별 상세 분석");
-        XLSX.writeFile(wb, `${candidateInfo.name}_AI면접결과_${new Date().toISOString().split('T')[0]}.xlsx`);
+            XLSX.utils.book_append_sheet(wb, wsInfo, "종합 결과 요약");
+            XLSX.utils.book_append_sheet(wb, wsQnA, "질문별 상세 분석");
+            
+            const fileName = `${candidateInfo.name}_AI면접분석_${new Date().toISOString().split('T')[0]}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+            showToast('Excel 다운로드가 완료되었습니다.');
+        } catch (e) {
+            console.error('Excel Export Error:', e);
+            showToast('Excel 생성 중 오류가 발생했습니다.', 'error');
+        }
     };
 
     const selectCls = "w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white text-black appearance-none cursor-pointer pr-10";
@@ -241,7 +257,8 @@ export default function InterviewResultPanel({ initialCandidateId }) {
                             <div className="space-y-4">
                                 <h3 className="text-xl font-bold text-slate-800">질문별 상세 분석</h3>
                                 {(resultData.ai_analysis.answerAnalysis || []).map((a, i) => {
-                                    if (!includeSalary && i === 9) return null;
+                                    const isSalaryQ = a.question.includes('연봉') || a.question.includes('처우');
+                                    if (!includeSalary && isSalaryQ) return null;
                                     return (
                                         <div key={i} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
                                             <div className="bg-slate-50 border-b border-slate-100 p-5 flex items-start justify-between gap-4">
