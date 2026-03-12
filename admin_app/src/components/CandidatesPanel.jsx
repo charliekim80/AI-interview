@@ -124,9 +124,9 @@ export default function CandidatesPanel() {
                 throw new Error('생성된 AI 질문이 없습니다.');
             }
 
-            // 생성 완료 → 모든 질문 선택 기본값
+            // 생성 완료 → 기본값으로 모든 질문 선택 해제 (인사담당자가 직접 선택하도록 변경)
             setGeneratedQuestions(resAI.data.questions);
-            setSelectedQuestions(resAI.data.questions.map((_, i) => i)); // 모두 선택
+            setSelectedQuestions([]); 
 
         } catch (e) {
             console.error(e);
@@ -194,6 +194,14 @@ export default function CandidatesPanel() {
         setSelectedQuestions(prev =>
             prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]
         );
+    };
+
+    const toggleAllQuestions = () => {
+        if (selectedQuestions.length === generatedQuestions.length) {
+            setSelectedQuestions([]);
+        } else {
+            setSelectedQuestions(generatedQuestions.map((_, i) => i));
+        }
     };
 
     const updateQuestionText = (idx, newText) => {
@@ -380,9 +388,21 @@ export default function CandidatesPanel() {
                                 </h3>
                                 <p className="text-sm text-slate-500 mt-1">면접에 반영할 질문을 선택하고 필요시 내용을 수정하세요.</p>
                             </div>
-                            <button onClick={handleReset} className="text-sm text-slate-500 hover:text-red-500 border border-slate-200 hover:border-red-200 px-4 py-2 rounded-xl transition-colors">
-                                처음부터 다시
-                            </button>
+                            <div className="flex items-center gap-3">
+                                <button 
+                                    onClick={toggleAllQuestions}
+                                    className={`text-sm font-bold px-4 py-2 rounded-xl transition-all border ${
+                                        selectedQuestions.length === generatedQuestions.length
+                                        ? 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'
+                                        : 'bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100'
+                                    }`}
+                                >
+                                    {selectedQuestions.length === generatedQuestions.length ? '전체 해제' : '전체 선택'}
+                                </button>
+                                <button onClick={handleReset} className="text-sm text-slate-500 hover:text-red-500 border border-slate-200 hover:border-red-200 px-4 py-2 rounded-xl transition-colors">
+                                    처음부터 다시
+                                </button>
+                            </div>
                         </div>
 
                         <div className="space-y-3">
