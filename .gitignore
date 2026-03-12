@@ -1,0 +1,18 @@
+node_modules/
+.DS_Store
+
+# Server
+server/node_modules/
+server/.env
+server/uploads/
+server/*.sqlite
+server/database.sqlite
+server/database.sqlite-journal
+
+# Admin App
+admin_app/node_modules/
+admin_app/.env
+admin_app/dist/
+
+# Gemini
+.gemini/
