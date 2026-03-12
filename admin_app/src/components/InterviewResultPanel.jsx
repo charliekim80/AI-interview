@@ -57,7 +57,7 @@ export default function InterviewResultPanel({ initialCandidateId }) {
     const handleViewResult = async () => {
         if (!selectedCandidateId) { showToast('지원자를 선택해주세요.', 'error'); return; }
         const candidate = filteredCandidates.find(c => String(c.id) === String(selectedCandidateId));
-        if (!candidate?.interview_token) { showToast('면접 링크가 없는 지원자입니다.', 'error'); return; }
+        if (!candidate?.interview_token) return; 
 
         try {
             setLoading(true);
