@@ -34,10 +34,14 @@ router.post('/', async (req, res) => {
 
         await supabase.from('candidates').update({ status: 'Invited' }).eq('id', candidate_id);
 
+        const host = req.get('host');
+        const protocol = req.protocol;
+        const baseUrl = process.env.FRONTEND_URL || `${protocol}://${host}`;
+
         res.status(201).json({
             id: newRow.id,
             token,
-            interview_link: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/interview?token=${token}`
+            interview_link: `${baseUrl}/interview?token=${token}`
         });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -54,7 +58,10 @@ router.get('/candidate/:id', async (req, res) => {
         if (error) throw error;
         if (!iRows || iRows.length === 0) return res.status(404).json({ error: '면접 세션이 없습니다.' });
         
-        const row = iRows[0];
+        const host = req.get('host');
+        const protocol = req.protocol;
+        const baseUrl = process.env.FRONTEND_URL || `${protocol}://${host}`;
+
         res.json({
             ...row,
             candidate_name: row.candidates?.name,
@@ -63,7 +70,7 @@ router.get('/candidate/:id', async (req, res) => {
             confirmed_questions: JSON.parse(row.confirmed_questions || '[]'),
             answers: JSON.parse(row.answers || '[]'),
             ai_analysis: row.ai_analysis ? JSON.parse(row.ai_analysis) : null,
-            interview_link: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/interview?token=${row.token}`,
+            interview_link: `${baseUrl}/interview?token=${row.token}`,
             candidates: undefined
         });
     } catch (e) { res.status(500).json({ error: e.message }); }

@@ -857,7 +857,7 @@
         function initRecognition() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) {
-                alert('이 브라우저는 음성 인식을 지원하지 않습니다.\nChrome 브라우저를 사용해 주세요.');
+                showError('브라우저 미지원', '음성 인식 기능은 Chrome 또는 최신 브라우저에서만 지원됩니다. 원활한 면접을 위해 브라우저를 변경해 주세요.');
                 return null;
             }
 
