@@ -113,7 +113,7 @@ app.use((err, req, res, next) => {
 });
 
 // ─── Start Server ─────────────────────────────────────────────
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log('================================================');
     console.log(`  TecAce AI Interview Server`);
     console.log(`  http://localhost:${PORT}`);
