@@ -1,10 +1,11 @@
-import { useState } from 'react';
-import { LayoutDashboard, FileText, Users, Settings, BrainCircuit, ClipboardList } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { LayoutDashboard, FileText, Users, Settings, BrainCircuit, ClipboardList, LogOut } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import JobsPanel from './components/JobsPanel';
 import CandidatesPanel from './components/CandidatesPanel';
 import SettingsPanel from './components/SettingsPanel';
 import InterviewResultPanel from './components/InterviewResultPanel';
+import Login from './components/Login';
 import './App.css';
 
 const navItems = [
@@ -31,17 +32,52 @@ const sectionDescriptions = {
 };
 
 export default function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [active, setActive] = useState('dashboard');
   const [activeCandidateId, setActiveCandidateId] = useState(null);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const session = localStorage.getItem('admin_session');
+    if (session) {
+      try {
+        const parsed = JSON.parse(session);
+        // 간단한 만료 체크 (24시간)
+        if (Date.now() - parsed.at < 24 * 60 * 60 * 1000) {
+          setIsLoggedIn(true);
+          setUser({ name: parsed.name, email: parsed.email });
+        } else {
+          localStorage.removeItem('admin_session');
+        }
+      } catch (e) {
+        localStorage.removeItem('admin_session');
+      }
+    }
+  }, []);
+
+  const handleLoginSuccess = () => {
+    const session = JSON.parse(localStorage.getItem('admin_session'));
+    setIsLoggedIn(true);
+    setUser({ name: session.name, email: session.email });
+    setActive('dashboard');
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('admin_session');
+    setIsLoggedIn(false);
+    setUser(null);
+  };
 
   const handleNavigate = (page, data = null) => {
     setActive(page);
     if (page === 'interview-result' && data) {
       setActiveCandidateId(data);
-    } else if (page !== 'interview-result') {
-      // 결과 페이지가 아닌 곳으로 갈 때는 초기화하거나 유지 (필요에 따라)
     }
   };
+
+  if (!isLoggedIn) {
+    return <Login onLoginSuccess={handleLoginSuccess} />;
+  }
 
   const renderContent = () => {
     switch (active) {
@@ -103,14 +139,19 @@ export default function App() {
             <span className="font-medium text-sm">Settings</span>
           </button>
           <div className="p-4">
-            <div className="bg-slate-800/50 rounded-xl px-4 py-3 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-bold">
-                HR
+            <div className="bg-slate-800/50 rounded-xl px-4 py-3 flex items-center justify-between group">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-bold">
+                  {user?.name?.substring(0, 2) || 'AD'}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-white">{user?.name || 'HR Admin'}</p>
+                  <p className="text-[10px] text-slate-400 truncate max-w-[80px]">{user?.email || 'hr@tecace.com'}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-medium text-white">HR Admin</p>
-                <p className="text-xs text-slate-400">hr@tecace.com</p>
-              </div>
+              <button onClick={handleLogout} className="text-slate-500 hover:text-red-400 transition-colors p-1" title="로그아웃">
+                <LogOut className="w-4 h-4" />
+              </button>
             </div>
           </div>
         </div>
