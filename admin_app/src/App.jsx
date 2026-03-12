@@ -62,7 +62,7 @@ export default function App() {
         <div className="p-6 border-b border-slate-700/50">
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center">
-              <img src="/TecAceAI.png" alt="TecAce Logo" className="h-[46px] w-[46px] object-contain" />
+              <img src={`${import.meta.env.BASE_URL}TecAceAI.png`} alt="TecAce Logo" className="h-[46px] w-[46px] object-contain" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-white tracking-tight">TecAce</h1>
