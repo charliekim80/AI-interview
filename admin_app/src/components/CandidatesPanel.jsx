@@ -41,6 +41,24 @@ export default function CandidatesPanel() {
         }).catch(console.error);
     }, []);
 
+    // App.jsx에서 전달받은 초기 데이터(Dashboard -> Candidates) 처리
+    useEffect(() => {
+        if (window.candidatesInitialData) {
+            const data = window.candidatesInitialData;
+            setForm({
+                name: data.name || '',
+                email: data.email || '',
+                phone: data.phone || '',
+                job_id: data.job_id || '',
+                department: data.department || '',
+                linkedin: data.linkedin || '',
+                notes: data.notes || ''
+            });
+            // 소모성 데이터이므로 사용 후 즉시 제거
+            delete window.candidatesInitialData;
+        }
+    }, []);
+
     const showToast = (msg, type = 'success') => {
         setToast({ msg, type });
         setTimeout(() => setToast(null), 3500);
@@ -124,9 +142,9 @@ export default function CandidatesPanel() {
                 throw new Error('생성된 AI 질문이 없습니다.');
             }
 
-            // 생성 완료 → 기본값으로 모든 질문 선택 해제 (인사담당자가 직접 선택하도록 변경)
+            // 생성 완료 → 모든 질문 선택 기본값 (사용자 요청에 따라 원복)
             setGeneratedQuestions(resAI.data.questions);
-            setSelectedQuestions([]); 
+            setSelectedQuestions(resAI.data.questions.map((_, i) => i)); // 모두 선택
 
         } catch (e) {
             console.error(e);

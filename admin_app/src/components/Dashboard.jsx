@@ -302,7 +302,7 @@ export default function Dashboard({ onNavigate }) {
                                                 </button>
                                             ) : (
                                                 <button
-                                                    onClick={() => onNavigate('candidates')}
+                                                    onClick={() => onNavigate('candidates', c)}
                                                     className="flex items-center gap-1.5 text-xs font-bold text-amber-600 hover:text-white bg-amber-50 hover:bg-amber-500 px-3 py-2 rounded-lg transition-colors border border-amber-100 hover:border-amber-500"
                                                 >
                                                     <Plus className="w-4 h-4" /> 질문 생성

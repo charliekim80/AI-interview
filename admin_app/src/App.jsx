@@ -72,6 +72,9 @@ export default function App() {
     setActive(page);
     if (page === 'interview-result' && data) {
       setActiveCandidateId(data);
+    } else if (page === 'candidates' && data) {
+      // Phase 10: 질문 생성 페이지로 데이터 브릿지 (window 객체 사용 - Prototype 방식)
+      window.candidatesInitialData = data;
     }
   };
 
