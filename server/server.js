@@ -8,7 +8,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ─── Middleware ──────────────────────────────────────────────
-const whitelist = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()) : [];
+const whitelist = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(o => o !== '') : [];
 const corsOptions = {
     origin: function (origin, callback) {
         // 1. origin이 없으면 허용 (동일 도메인 요청 등)
