@@ -137,6 +137,8 @@ router.post('/:token/answers', async (req, res) => {
         // 백그라운드 AI 분석
         const confirmedQs = JSON.parse(row.confirmed_questions || '[]');
         try {
+            await supabase.from('candidates').update({ status: 'Analyzing' }).eq('id', candidateInfo.id);
+            
             const analysis = await analyzeAnswers(
                 { name: candidateInfo.name },
                 { title: jobInfo.title, department: jobInfo.department, description: jobInfo.description, required_skills: jobInfo.required_skills },
@@ -149,7 +151,8 @@ router.post('/:token/answers', async (req, res) => {
             console.log(`[AI] 분석 완료: ${candidateInfo.name} — Score: ${analysis.overallScore}`);
         } catch (e) {
             console.error('[AI] 분석 오류:', e.message);
-            await supabase.from('candidates').update({ status: 'Completed' }).eq('id', candidateInfo.id);
+            // 분석 실패 시에도 면접 상태는 Completed로 유지하되 지원자 상태를 Fail로 찍어 관리자 인지 유도
+            await supabase.from('candidates').update({ status: 'Analysis Failed' }).eq('id', candidateInfo.id);
         }
     } catch (e) { res.status(500).json({ error: e.message }); }
 });

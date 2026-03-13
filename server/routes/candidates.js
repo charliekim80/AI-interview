@@ -108,7 +108,15 @@ router.post('/', upload.array('resumes', 3), async (req, res) => {
         delete newRow.jobs;
 
         res.status(201).json(newRow);
-    } catch (e) { res.status(500).json({ error: e.message }); }
+    } catch (e) { 
+        // 롤백: 업로드된 파일 삭제 (고아 파일 방지)
+        if (req.files && req.files.length > 0) {
+            req.files.forEach(f => {
+                if (fs.existsSync(f.path)) fs.unlinkSync(f.path);
+            });
+        }
+        res.status(500).json({ error: e.message }); 
+    }
 });
 
 // PUT /api/candidates/:id — 지원자 정보 업데이트 (이력서 포함)
@@ -161,7 +169,15 @@ router.put('/:id', upload.array('resumes', 3), async (req, res) => {
         delete updated.jobs;
 
         res.json(updated);
-    } catch (e) { res.status(500).json({ error: e.message }); }
+    } catch (e) { 
+        // 롤백: 신규 업로드된 파일 삭제
+        if (req.files && req.files.length > 0) {
+            req.files.forEach(f => {
+                if (fs.existsSync(f.path)) fs.unlinkSync(f.path);
+            });
+        }
+        res.status(500).json({ error: e.message }); 
+    }
 });
 
 // DELETE /api/candidates/:id — 완전 삭제 (모든 이력서 파일 + 면접 데이터 포함)

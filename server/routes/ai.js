@@ -13,15 +13,10 @@ async function getOpenAIKey() {
     try {
         const supabase = await getSupabase();
         const { data, error } = await supabase.from('settings').select('value').eq('key', 'openai_api_key').maybeSingle();
-        if (error || !data) throw new Error('Not found in supabase');
+        if (error || !data) return null;
         return data.value;
     } catch { 
-        // fallback to local SQLite if Supabase not ready
-        try {
-            const localDb = require('../db/database');
-            const row = await localDb.get("SELECT value FROM settings WHERE key='openai_api_key'");
-            return row && row.value ? row.value : null;
-        } catch { return null; }
+        return null;
     }
 }
 
@@ -153,6 +148,10 @@ Q10: 반드시 포함: "당사 입사 시 기대하시는 처우(연봉) 및 현
 - 정확히 10개 요소 포함
 - 각 질문은 실제 면접관이 옆에서 묻는 듯한 정중하고 자연스러운 대화체로 작성`;
 
+        const resumeContext = (parsedResume && parsedResume.length > 100) 
+            ? parsedResume 
+            : "이력서 내용을 추출할 수 없거나 정보가 매우 부족합니다. 이력서에 의존하기보다는 해당 직무(JD)를 수행하기 위해 필요한 핵심 역량을 검증할 수 있는 공통 실무 시나리오 질문을 생성하세요.";
+
         const userPrompt = `[지원하는 직무]
 Job Title: ${job.title}
 JD 내용: ${job.description || '없음'}
@@ -160,28 +159,51 @@ JD 내용: ${job.description || '없음'}
 
 [지원자 정보]
 이름: ${candidate.name}
-이력서: ${parsedResume || '이력서 없음'}
+이력서 분석 내용: ${resumeContext}
 
 위 정보를 바탕으로 지원자 맞춤형 면접 질문 10개를 생성하세요.`;
 
-        const completion = await openai.chat.completions.create({
-            model: 'gpt-4o-mini',
-            messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: userPrompt }
-            ],
-            temperature: 0.6,
-            max_tokens: 2500,
-        });
+        let questions = [];
+        let retryCount = 0;
+        const maxRetries = 2;
 
-        const content = completion.choices[0].message.content.trim();
-        const match = content.match(/\[[\s\S]*\]/);
-        if (!match) throw new Error('JSON 파싱 실패');
+        while (retryCount <= maxRetries) {
+            try {
+                const completion = await openai.chat.completions.create({
+                    model: 'gpt-4o-mini',
+                    messages: [
+                        { role: 'system', content: systemPrompt },
+                        { role: 'user', content: userPrompt }
+                    ],
+                    temperature: 0.6,
+                    max_tokens: 2500,
+                    response_format: { type: "json_object" } // JSON 모드 강제
+                });
 
-        const questions = JSON.parse(match[0]);
-        if (!Array.isArray(questions) || questions.length !== 10) {
-            throw new Error(`질문 개수 불일치: ${questions.length}개 (10개 필요)`);
+                const content = completion.choices[0].message.content.trim();
+                // OpenAI JSON 모드는 객체를 반환하므로 배열을 감싼 형태일 가능성이 높음
+                const parsed = JSON.parse(content);
+                
+                // 다양한 형태의 응답 지원 (배열 직접 또는 특정 키에 배열)
+                if (Array.isArray(parsed)) {
+                    questions = parsed;
+                } else if (parsed.questions && Array.isArray(parsed.questions)) {
+                    questions = parsed.questions;
+                } else {
+                    // 키가 무엇이든 첫 번째 배열을 찾음
+                    const firstArrayKey = Object.keys(parsed).find(k => Array.isArray(parsed[k]));
+                    if (firstArrayKey) questions = parsed[firstArrayKey];
+                }
+
+                if (questions.length === 10) break;
+                throw new Error(`질문 개수 불일치: ${questions.length}개`);
+            } catch (err) {
+                console.error(`[AI] 질문 생성 시도 ${retryCount + 1} 실패:`, err.message);
+                retryCount++;
+                if (retryCount > maxRetries) throw err;
+            }
         }
+
         res.json({ questions, mode: 'ai' });
 
     } catch (e) {

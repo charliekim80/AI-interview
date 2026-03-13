@@ -8,8 +8,16 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ─── Middleware ──────────────────────────────────────────────
+const whitelist = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [];
 app.use(cors({
-    origin: true, // 프로토타입 배포 및 도메인 유연성을 위해 모든 접근 허용 (CORS Error 방지)
+    origin: function (origin, callback) {
+        // origin이 없거나(동일 도메인/서버사이드 호출), 화이트리스트에 있거나, 개발 환경이면 허용
+        if (!origin || whitelist.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+            callback(null, true);
+        } else {
+            callback(new Error('CORS 정책에 의해 차단되었습니다.'));
+        }
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true
 }));
