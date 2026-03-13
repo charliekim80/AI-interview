@@ -158,9 +158,14 @@ export default function CandidatesPanel() {
                 throw new Error('생성된 AI 질문이 없습니다.');
             }
 
-            // 생성 완료 → 모든 질문 선택 기본값 (사용자 요청에 따라 원복)
-            setGeneratedQuestions(resAI.data.questions);
-            setSelectedQuestions(resAI.data.questions.map((_, i) => i)); // 모두 선택
+            // 생성 완료 → 모든 질문 선택 기본값 + 개별 꼬리질문 옵션 기본 활성화
+            const transformedQs = resAI.data.questions.map(q => ({
+                text: typeof q === 'string' ? q : q.text,
+                use_followup: true
+            }));
+            
+            setGeneratedQuestions(transformedQs);
+            setSelectedQuestions(transformedQs.map((_, i) => i)); // 모두 선택
 
         } catch (e) {
             console.error(e);
@@ -194,9 +199,8 @@ export default function CandidatesPanel() {
 
             const resLink = await api.post('/api/interviews', {
                 candidate_id: createdCandidateId,
-                all_questions: generatedQuestions,
-                confirmed_questions: confirmedQs,
-                use_followup: form.use_followup
+                all_questions: generatedQuestions, // 객체 배열 그대로 전송
+                confirmed_questions: confirmedQs
             });
 
             setInterviewLink(resLink.data.interview_link);
@@ -240,7 +244,11 @@ export default function CandidatesPanel() {
     };
 
     const updateQuestionText = (idx, newText) => {
-        setGeneratedQuestions(prev => prev.map((q, i) => i === idx ? newText : q));
+        setGeneratedQuestions(prev => prev.map((q, i) => i === idx ? { ...q, text: newText } : q));
+    };
+
+    const toggleQuestionFollowup = (idx) => {
+        setGeneratedQuestions(prev => prev.map((q, i) => i === idx ? { ...q, use_followup: !q.use_followup } : q));
     };
 
     const inputCls = "w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white text-black";
@@ -487,7 +495,7 @@ export default function CandidatesPanel() {
                                             </span>
                                             {editingIdx === idx ? (
                                                 <textarea
-                                                    value={q}
+                                                    value={q.text}
                                                     onChange={e => updateQuestionText(idx, e.target.value)}
                                                     onBlur={() => setEditingIdx(null)}
                                                     autoFocus
@@ -495,7 +503,24 @@ export default function CandidatesPanel() {
                                                     className="w-full text-sm text-slate-800 bg-white border border-blue-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/20 resize-none"
                                                 />
                                             ) : (
-                                                <p className="text-sm text-slate-800 leading-relaxed">{q}</p>
+                                                <div className="flex flex-col gap-2">
+                                                    <p className="text-sm text-slate-800 leading-relaxed">{q.text}</p>
+                                                    
+                                                    {/* 개별 꼬리질문 스위치 */}
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <label className="flex items-center gap-2 cursor-pointer group">
+                                                            <div className="relative scale-75 origin-left">
+                                                                <input type="checkbox" checked={q.use_followup} 
+                                                                    onChange={() => toggleQuestionFollowup(idx)} 
+                                                                    className="sr-only peer" />
+                                                                <div className="w-10 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                                                            </div>
+                                                            <span className={`text-[11px] font-bold transition-colors ${q.use_followup ? 'text-emerald-700' : 'text-slate-400'}`}>
+                                                                꼬리질문 {q.use_followup ? '활성화됨' : '비활성'}
+                                                            </span>
+                                                        </label>
+                                                    </div>
+                                                </div>
                                             )}
                                         </div>
                                         <button onClick={() => setEditingIdx(editingIdx === idx ? null : idx)}

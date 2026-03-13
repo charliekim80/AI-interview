@@ -8,14 +8,18 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ─── Middleware ──────────────────────────────────────────────
-const whitelist = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [];
+const whitelist = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()) : [];
 const corsOptions = {
     origin: function (origin, callback) {
-        // origin이 없거나, 화이트리스트에 있거나, 개발 환경이면 허용
-        if (!origin || whitelist.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+        // 1. origin이 없으면 허용 (동일 도메인 요청 등)
+        // 2. 개발 환경이면 허용
+        // 3. 화이트리스트가 비어있으면 (설정 전) 허용하여 차단 방지
+        // 4. 화이트리스트에 해당 origin이 있으면 허용
+        if (!origin || process.env.NODE_ENV !== 'production' || whitelist.length === 0 || whitelist.indexOf(origin) !== -1) {
             callback(null, true);
         } else {
-            callback(new Error('CORS 정책에 의해 차단되었습니다.'));
+            console.warn(`[CORS Blocked] Origin: ${origin}`);
+            callback(new Error('CORS 정책에 의해 차단되었습니다. (관리자 설정을 확인하세요)'));
         }
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],

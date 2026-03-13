@@ -90,18 +90,17 @@ router.get('/:token', async (req, res) => {
         if (row.status === 'Completed') return res.status(409).json({ error: '이미 완료된 면접입니다.' });
         if (row.status === 'Expired') return res.status(410).json({ error: '만료된 면접 링크입니다.' });
         
-        res.json({
-            token: row.token,
-            candidate_id: row.candidate_id,
-            candidate_name: row.candidates?.name,
-            candidate_email: row.candidates?.email,
-            job_title: row.candidates?.jobs?.title,
-            job_id: row.candidates?.job_id,
-            department: row.candidates?.jobs?.department,
-            questions: JSON.parse(row.confirmed_questions || '[]'),
-            use_followup: row.use_followup,
-            status: row.status
-        });
+            res.json({
+                token: row.token,
+                candidate_id: row.candidate_id,
+                candidate_name: row.candidates?.name,
+                candidate_email: row.candidates?.email,
+                job_title: row.candidates?.jobs?.title,
+                job_id: row.candidates?.job_id,
+                department: row.candidates?.jobs?.department,
+                questions: JSON.parse(row.confirmed_questions || '[]'),
+                status: row.status
+            });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -142,7 +141,7 @@ router.post('/:token/answers', async (req, res) => {
             const analysis = await analyzeAnswers(
                 { name: candidateInfo.name },
                 { title: jobInfo.title, department: jobInfo.department, description: jobInfo.description, required_skills: jobInfo.required_skills },
-                confirmedQs,
+                confirmedQs.map(q => typeof q === 'string' ? q : q.text), // 텍스트만 추출
                 answers
             );
             

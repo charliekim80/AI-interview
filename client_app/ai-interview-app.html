@@ -822,15 +822,16 @@
         }
 
         function renderQuestion() {
-            const q = interviewData.questions[currentQIdx];
+            const rawQ = interviewData.questions[currentQIdx];
+            const qText = typeof rawQ === 'string' ? rawQ : rawQ.text;
             const tot = interviewData.questions.length;
             document.getElementById('questionNum').textContent = `질문 ${currentQIdx + 1} / ${tot}`;
-            document.getElementById('questionText').textContent = q;
+            document.getElementById('questionText').textContent = qText;
             document.getElementById('nextBtnText').textContent = currentQIdx === tot - 1 ? '면접 완료' : '다음 질문';
             document.getElementById('followupBadge').classList.add('hidden');
             isFollowUp = false;
             resetSTT();
-            speakQuestion(q);
+            speakQuestion(qText);
         }
 
         // 꼬리질문 렌더링
@@ -1013,17 +1014,22 @@
             const answerText = finalTranscript.trim() ||
                 document.getElementById('finalText').textContent.trim() || '';
 
-            const currentQ = isFollowUp ? document.getElementById('questionText').textContent : interviewData.questions[currentQIdx];
+            const rawQ = interviewData.questions[currentQIdx];
+            const qText = typeof rawQ === 'string' ? rawQ : rawQ.text;
+            // 개별 질문의 use_followup 옵션 사용 (없으면 전체 설정 fallback)
+            const currentQUseFollowup = typeof rawQ === 'string' ? (interviewData.use_followup !== false) : rawQ.use_followup;
+
+            const currentQDisplay = isFollowUp ? document.getElementById('questionText').textContent : qText;
 
             answers.push({
                 questionIndex: currentQIdx,
-                question: currentQ,
+                question: currentQDisplay,
                 answer: answerText,
                 isFollowUp: isFollowUp
             });
 
-            // Phase 11: 꼬리질문 로직
-            if (!isFollowUp && interviewData.use_followup) {
+            // 꼬리질문 로직: 개별 질문 옵션이 활성화된 경우만 수행
+            if (!isFollowUp && currentQUseFollowup) {
                 // 특정 시나리오 문항(2~7번)에서만 꼬리질문 시도 (비용/시간 최적화)
                 if (currentQIdx >= 1 && currentQIdx <= 6 && answerText.length > 5) {
                     try {
