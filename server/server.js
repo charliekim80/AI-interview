@@ -9,9 +9,9 @@ const PORT = process.env.PORT || 3000;
 
 // ─── Middleware ──────────────────────────────────────────────
 const whitelist = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [];
-app.use(cors({
+const corsOptions = {
     origin: function (origin, callback) {
-        // origin이 없거나(동일 도메인/서버사이드 호출), 화이트리스트에 있거나, 개발 환경이면 허용
+        // origin이 없거나, 화이트리스트에 있거나, 개발 환경이면 허용
         if (!origin || whitelist.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
             callback(null, true);
         } else {
@@ -20,7 +20,11 @@ app.use(cors({
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true
-}));
+};
+
+// CORS는 API 요청에만 적용하여 정적 파일(JS/CSS) 로딩 차단 방지
+app.use('/api', cors(corsOptions));
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
