@@ -10,14 +10,14 @@ import './App.css';
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'jobs', label: 'Job Title', icon: FileText },
+  { id: 'jobs', label: 'Job Position', icon: FileText },
   { id: 'candidates', label: 'Candidates', icon: Users },
   { id: 'interview-result', label: 'Interview Result', icon: ClipboardList },
 ];
 
 const sectionLabels = {
   dashboard: 'Dashboard',
-  jobs: 'Job Title',
+  jobs: 'Job Position',
   candidates: 'Candidates',
   'interview-result': 'Interview Result',
   settings: 'Settings',
@@ -27,7 +27,7 @@ const sectionDescriptions = {
   dashboard: '전체 지원자 현황 및 면접 결과/링크를 관리하세요',
   jobs: '채용 포지션을 등록하고 관리하세요',
   candidates: '지원자를 등록하고 AI 면접 질문을 생성하세요',
-  'interview-result': 'Job Title과 지원자를 선택하여 면접 결과를 조회하고 Excel로 내보낼 수 있습니다',
+  'interview-result': 'Job Position과 지원자를 선택하여 면접 결과를 조회하고 Excel로 내보낼 수 있습니다',
   settings: 'OpenAI API Key 및 분류/부서 설정',
 };
 
