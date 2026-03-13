@@ -87,7 +87,7 @@ app.get('/api/stats', async (req, res) => {
 
 // ─── Health Check ────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString(), port: PORT });
+    res.json({ status: 'ok', version: 'v1.3.1-cors-fixed', timestamp: new Date().toISOString(), port: PORT });
 });
 
 // ─── Root ─────────────────────────────────────────────────────
