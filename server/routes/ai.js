@@ -57,6 +57,8 @@ async function parseResume(filename) {
     } catch (e) {
         console.error('[AI] 이력서 파싱 실패, Fallback 진행:', e.message);
     }
+    
+    // 최종적으로 텍스트가 너무 짧으면 로그만 남기고 빈 값 반환 (LLM이 나중에 '이력서 없음' 문구로 처리하도록)
     return '';
 }
 
@@ -265,6 +267,60 @@ ${qaText}
         };
     }
 }
+
+// POST /api/ai/follow-up
+router.post('/follow-up', async (req, res) => {
+    const { question, answer, job_id, candidate_id } = req.body;
+    if (!question || !answer) return res.status(400).json({ error: '데이터가 부족합니다.' });
+
+    try {
+        const apiKey = await getOpenAIKey();
+        if (!apiKey) return res.json({ followUp: null }); // API 키 없으면 스킵
+
+        const supabase = await getSupabase();
+        const { data: job } = await supabase.from('jobs').select('title, description').eq('id', job_id).maybeSingle();
+
+        const { OpenAI } = require('openai');
+        const openai = new OpenAI({ apiKey });
+
+        const systemPrompt = `당신은 심층 면접 전문가입니다.
+지원자의 답변을 바탕으로, 해당 답변의 진위여부를 확인하거나 구체적인 기술적/상황적 근거를 묻는 '꼬리 질문'을 딱 1개만 생성하세요.
+
+[규칙]
+- 질문은 1~2문장으로 짧고 명확하게 하세요.
+- "방금 말씀하신 내용 중 ~부분에 대해 더 자세히 설명해주시겠습니까?" 같은 형식을 취하세요.
+- 답변이 너무 모호하거나 짧다면 구체적인 사례를 요청하세요.
+- 만약 이미 충분히 구체적이라면 "null"을 반환하여 꼬리 질문을 생략하세요.
+- 출력 형식: 반드시 JSON 형태 {"followUp": "질문내용" 또는 null}`;
+
+        const userPrompt = `[메인 질문]: ${question}
+[지원자 답변]: ${answer}
+[지원 직무]: ${job?.title || 'N/A'}
+
+위 답변에 대해 심층 질문이 필요하다면 생성하고, 필요 없다면 null을 반환하세요.`;
+
+        const completion = await openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userPrompt }
+            ],
+            temperature: 0.5,
+            max_tokens: 500,
+        });
+
+        const content = completion.choices[0].message.content.trim();
+        const m = content.match(/\{[\s\S]*\}/);
+        if (!m) return res.json({ followUp: null });
+        
+        const result = JSON.parse(m[0]);
+        res.json(result);
+
+    } catch (e) {
+        console.error('[AI] 꼬리질문 생성 오류:', e.message);
+        res.json({ followUp: null });
+    }
+});
 
 module.exports = router;
 module.exports.analyzeAnswers = analyzeAnswers;

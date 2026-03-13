@@ -467,10 +467,14 @@
             border: 1px solid rgba(16, 185, 129, 0.3);
         }
 
-        .badge-red {
-            background: rgba(239, 68, 68, 0.15);
-            color: #ef4444;
-            border: 1px solid rgba(239, 68, 68, 0.3);
+        .pulse-badge {
+            animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(6, 182, 212, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0); }
         }
     </style>
 </head>
@@ -734,7 +738,8 @@
         let interviewToken = null;
         let interviewData = null;   // { token, questions, candidate_name, job_title, ... }
         let currentQIdx = 0;
-        let answers = [];     // [{ questionIndex, question, answer }]
+        let isFollowUp = false; // Phase 11: 꼬리질문 여부
+        let answers = [];     // [{ questionIndex, question, answer, isFollowUp }]
         let finalTranscript = '';
         let recognition = null;
         let isRecording = false;
@@ -819,8 +824,20 @@
             document.getElementById('questionNum').textContent = `질문 ${currentQIdx + 1} / ${tot}`;
             document.getElementById('questionText').textContent = q;
             document.getElementById('nextBtnText').textContent = currentQIdx === tot - 1 ? '면접 완료' : '다음 질문';
+            document.getElementById('followupBadge').classList.add('hidden');
+            isFollowUp = false;
             resetSTT();
             speakQuestion(q);
+        }
+
+        // 꼬리질문 렌더링
+        function renderFollowUp(qText) {
+            document.getElementById('questionText').textContent = qText;
+            document.getElementById('followupBadge').classList.remove('hidden');
+            document.getElementById('nextBtnText').textContent = currentQIdx === interviewData.questions.length - 1 ? '면접 완료' : '다음 질문';
+            isFollowUp = true;
+            resetSTT();
+            speakQuestion(qText);
         }
 
         // ── TTS (텍스트 음성 변환) ──────────────────────────────────
@@ -986,19 +1003,50 @@
             document.getElementById('timerDisplay').textContent = `${m}:${s.toString().padStart(2, '0')}`;
         }
 
-        // ── 답변 완료 → 다음 질문 or 제출 ─────────────────────────
-        function completeAnswer() {
+        // ── 답변 완료 → 꼬리 질문 생성 or 다음 질문 or 제출 ─────────────────────────
+        async function completeAnswer() {
             stopRecording();
 
             const answerText = finalTranscript.trim() ||
                 document.getElementById('finalText').textContent.trim() || '';
 
+            const currentQ = isFollowUp ? document.getElementById('questionText').textContent : interviewData.questions[currentQIdx];
+
             answers.push({
                 questionIndex: currentQIdx,
-                question: interviewData.questions[currentQIdx],
-                answer: answerText
+                question: currentQ,
+                answer: answerText,
+                isFollowUp: isFollowUp
             });
 
+            // Phase 11: 꼬리질문 로직
+            if (!isFollowUp) {
+                // 특정 시나리오 문항(2~7번)에서만 꼬리질문 시도 (비용/시간 최적화)
+                if (currentQIdx >= 1 && currentQIdx <= 6 && answerText.length > 5) {
+                    try {
+                        document.getElementById('questionHint').textContent = 'AI가 심층 질문을 생성하고 있습니다... 잠시만 기다려주세요.';
+                        const res = await fetch(`${API_BASE}/api/ai/follow-up`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                question: currentQ,
+                                answer: answerText,
+                                job_id: interviewData.job_id,
+                                candidate_id: interviewData.candidate_id
+                            })
+                        });
+                        const data = await res.json();
+                        if (data.followUp) {
+                            renderFollowUp(data.followUp);
+                            return; // 꼬리질문 모드로 전환 후 중단
+                        }
+                    } catch (e) {
+                        console.error('Follow-up error:', e);
+                    }
+                }
+            }
+
+            // 일반 질문 이동 로직
             if (currentQIdx < interviewData.questions.length - 1) {
                 currentQIdx++;
                 renderQuestion();
