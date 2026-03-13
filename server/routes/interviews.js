@@ -6,7 +6,7 @@ const { analyzeAnswers } = require('./ai');
 
 // POST /api/interviews - 면접 세션 생성
 router.post('/', async (req, res) => {
-    const { candidate_id, all_questions, confirmed_questions } = req.body;
+    const { candidate_id, all_questions, confirmed_questions, use_followup } = req.body;
     if (!candidate_id || !Array.isArray(confirmed_questions) || confirmed_questions.length === 0) {
         return res.status(400).json({ error: 'candidate_id와 1개 이상의 confirmed_questions가 필요합니다.' });
     }
@@ -28,6 +28,7 @@ router.post('/', async (req, res) => {
             token,
             all_questions: JSON.stringify(all_questions || confirmed_questions),
             confirmed_questions: JSON.stringify(confirmed_questions),
+            use_followup: use_followup !== undefined ? use_followup : true,
             status: 'Pending'
         }]).select().single();
         if (insertErr) throw insertErr;
@@ -91,11 +92,14 @@ router.get('/:token', async (req, res) => {
         
         res.json({
             token: row.token,
+            candidate_id: row.candidate_id,
             candidate_name: row.candidates?.name,
             candidate_email: row.candidates?.email,
             job_title: row.candidates?.jobs?.title,
+            job_id: row.candidates?.job_id,
             department: row.candidates?.jobs?.department,
             questions: JSON.parse(row.confirmed_questions || '[]'),
+            use_followup: row.use_followup,
             status: row.status
         });
     } catch (e) { res.status(500).json({ error: e.message }); }

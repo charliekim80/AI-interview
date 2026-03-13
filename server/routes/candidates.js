@@ -111,6 +111,59 @@ router.post('/', upload.array('resumes', 3), async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// PUT /api/candidates/:id — 지원자 정보 업데이트 (이력서 포함)
+router.put('/:id', upload.array('resumes', 3), async (req, res) => {
+    const { name, email, phone, job_id, department, linkedin, notes } = req.body;
+    const { id } = req.params;
+
+    try {
+        const supabase = await getSupabase();
+        
+        // 기존 정보 조회
+        const { data: existing, error: fetchErr } = await supabase.from('candidates').select('*').eq('id', id).maybeSingle();
+        if (fetchErr) throw fetchErr;
+        if (!existing) return res.status(404).json({ error: '지원자를 찾을 수 없습니다.' });
+
+        // 새 파일이 있는 경우 처리
+        let resumePath = existing.resume_path;
+        if (req.files && req.files.length > 0) {
+            const fileNames = req.files.map(f => f.filename);
+            resumePath = JSON.stringify(fileNames);
+            
+            // 기존 파일 삭제 (Prototype 환경에서는 덮어쓰기 대신 신규 등록이 많으므로 선택사항이나, 여기서는 깔끔하게 삭제 처리)
+            if (existing.resume_path) {
+                try {
+                    const oldPaths = JSON.parse(existing.resume_path);
+                    const pathsToDel = Array.isArray(oldPaths) ? oldPaths : [oldPaths];
+                    pathsToDel.forEach(p => {
+                        const fp = path.join(uploadDir, p);
+                        if (fs.existsSync(fp)) fs.unlinkSync(fp);
+                    });
+                } catch(e) {}
+            }
+        }
+
+        const { data: updated, error: updateErr } = await supabase
+            .from('candidates')
+            .update({
+                name, email, phone: phone || null, job_id: job_id || null,
+                department: department || '', resume_path: resumePath,
+                linkedin: linkedin || null, notes: notes || null,
+                updated_at: new Date()
+            })
+            .eq('id', id)
+            .select('*, jobs(title)')
+            .single();
+
+        if (updateErr) throw updateErr;
+
+        updated.job_title = updated.jobs?.title || null;
+        delete updated.jobs;
+
+        res.json(updated);
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // DELETE /api/candidates/:id — 완전 삭제 (모든 이력서 파일 + 면접 데이터 포함)
 router.delete('/:id', async (req, res) => {
     try {

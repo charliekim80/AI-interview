@@ -5,7 +5,7 @@ import api from '../api/client';
 export default function CandidatesPanel() {
     const [jobs, setJobs] = useState([]);
     const [departments, setDepartments] = useState([]);
-    const [form, setForm] = useState({ name: '', email: '', phone: '', job_id: '', department: '', linkedin: '', notes: '' });
+    const [form, setForm] = useState({ name: '', email: '', phone: '', job_id: '', department: '', linkedin: '', notes: '', use_followup: true });
     const [resumeFiles, setResumeFiles] = useState([]); // 다중 파일 배열
     const [saving, setSaving] = useState(false); // 지원자 등록 중
     const [loadingAI, setLoadingAI] = useState(false); // AI 질문 생성 중
@@ -52,8 +52,12 @@ export default function CandidatesPanel() {
                 job_id: data.job_id || '',
                 department: data.department || '',
                 linkedin: data.linkedin || '',
-                notes: data.notes || ''
+                notes: data.notes || '',
+                use_followup: data.use_followup !== undefined ? data.use_followup : true
             });
+            // 기존 지원자 ID 저장 (업데이트 모드)
+            if (data.id) setCreatedCandidateId(data.id);
+            
             // 소모성 데이터이므로 사용 후 즉시 제거
             delete window.candidatesInitialData;
         }
@@ -118,16 +122,28 @@ export default function CandidatesPanel() {
             setSaving(true);
             setLoadingStage('지원자 정보 및 이력서 등록 중...');
 
-            // Step 1: 지원자 등록
+            // Step 1: 지원자 등록 또는 업데이트
             const fd = new FormData();
-            Object.entries(form).forEach(([k, v]) => v && fd.append(k, v));
+            Object.entries(form).forEach(([k, v]) => {
+                if (v !== undefined && v !== null) fd.append(k, v);
+            });
             resumeFiles.forEach(file => fd.append('resumes', file));
 
-            const resCandidate = await api.post('/api/candidates', fd, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
-            candidateId = resCandidate.data.id;
-            setCreatedCandidateId(candidateId);
+            let resCandidate;
+            if (createdCandidateId) {
+                // 기존 지원자 업데이트
+                resCandidate = await api.put(`/api/candidates/${createdCandidateId}`, fd, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                candidateId = createdCandidateId;
+            } else {
+                // 신규 지원자 등록
+                resCandidate = await api.post('/api/candidates', fd, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                candidateId = resCandidate.data.id;
+                setCreatedCandidateId(candidateId);
+            }
 
             // Step 2: AI 질문 생성
             setLoadingStage('이력서 및 직무를 분석하여 AI 질문 생성 중 (최대 30초)...');
@@ -179,7 +195,8 @@ export default function CandidatesPanel() {
             const resLink = await api.post('/api/interviews', {
                 candidate_id: createdCandidateId,
                 all_questions: generatedQuestions,
-                confirmed_questions: confirmedQs
+                confirmed_questions: confirmedQs,
+                use_followup: form.use_followup
             });
 
             setInterviewLink(resLink.data.interview_link);
@@ -199,7 +216,7 @@ export default function CandidatesPanel() {
     };
 
     const handleReset = () => {
-        setForm({ name: '', email: '', phone: '', job_id: jobs[0]?.id || '', department: '', linkedin: '', notes: '' });
+        setForm({ name: '', email: '', phone: '', job_id: jobs[0]?.id || '', department: '', linkedin: '', notes: '', use_followup: true });
         setResumeFiles([]);
         setGeneratedQuestions(null);
         setSelectedQuestions([]);
@@ -381,6 +398,27 @@ export default function CandidatesPanel() {
                                     <input type="text" placeholder="내부 메모..." value={form.notes}
                                         onChange={e => setForm({ ...form, notes: e.target.value })} className={inputCls} />
                                 </div>
+                            </div>
+                        </div>
+
+                        {/* AI Options */}
+                        <div className="bg-blue-50/50 rounded-2xl p-5 border border-blue-100/50">
+                            <h4 className="text-sm font-bold text-blue-800 mb-4 flex items-center gap-2">
+                                <Bot className="w-4 h-4" /> AI 면접 옵션
+                            </h4>
+                            <div className="flex items-center gap-3">
+                                <label className="flex items-center gap-2 cursor-pointer group">
+                                    <div className="relative">
+                                        <input type="checkbox" checked={form.use_followup} 
+                                            onChange={e => setForm({ ...form, use_followup: e.target.checked })} 
+                                            className="sr-only peer" />
+                                        <div className="w-10 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                    </div>
+                                    <span className="text-sm font-semibold text-slate-700 group-hover:text-blue-700 transition-colors">실시간 꼬리 질문(Follow-up) 활성화</span>
+                                </label>
+                                <p className="text-[11px] text-slate-500 bg-white/50 px-2 py-1 rounded-md border border-slate-100">
+                                    지원자의 답변을 실시간 분석하여 AI가 심층 질문을 1회 추가합니다.
+                                </p>
                             </div>
                         </div>
 

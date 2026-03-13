@@ -619,14 +619,17 @@
                 <div class="progress-item"></div>
             </div>
 
-            <div class="question-num" id="questionNum">질문 1 / ?</div>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px;">
+                <div class="question-num" id="questionNum">질문 1 / ?</div>
+                <div id="followupBadge" class="badge badge-green hidden pulse-badge" style="padding: 4px 10px; font-size: 11px;">심층 꼬리 질문</div>
+            </div>
             <div class="question-box">
                 <div class="question-text">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M23 7l-7 5 7 5V7z" />
                         <rect x="1" y="5" width="15" height="14" rx="2" />
                     </svg>
-                    <span id="questionText"></span>
+                    <span id="questionText">질문을 불러오고 있습니다...</span>
                 </div>
                 <p class="question-hint" id="questionHint">마이크 버튼을 눌러 답변을 시작하세요.</p>
             </div>
@@ -1020,7 +1023,7 @@
             });
 
             // Phase 11: 꼬리질문 로직
-            if (!isFollowUp) {
+            if (!isFollowUp && interviewData.use_followup) {
                 // 특정 시나리오 문항(2~7번)에서만 꼬리질문 시도 (비용/시간 최적화)
                 if (currentQIdx >= 1 && currentQIdx <= 6 && answerText.length > 5) {
                     try {
