@@ -491,17 +491,20 @@ export default function CandidatesPanel() {
                                                         <p className="text-sm text-slate-800 leading-relaxed">{qText}</p>
                                                         
                                                         <div className="flex items-center gap-2 mt-1">
-                                                            <label className="flex items-center gap-2 cursor-pointer group">
-                                                                <div className="relative scale-75 origin-left">
-                                                                    <input type="checkbox" checked={qUseFollowup} 
-                                                                        onChange={() => toggleQuestionFollowup(idx)} 
-                                                                        className="sr-only peer" />
-                                                                    <div className="w-10 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
-                                                                </div>
-                                                                <span className={`text-[11px] font-bold transition-colors ${qUseFollowup ? 'text-emerald-700' : 'text-slate-400'}`}>
-                                                                    꼬리질문 {qUseFollowup ? '활성화됨' : '비활성'}
-                                                                </span>
-                                                            </label>
+                                                            {/* 1, 9, 10번 질문은 꼬리질문 보임/숨김 처리 (Phase 14) */}
+                                                            {![0, 8, 9].includes(idx) && (
+                                                                <label className="flex items-center gap-2 cursor-pointer group">
+                                                                    <div className="relative scale-75 origin-left">
+                                                                        <input type="checkbox" checked={qUseFollowup} 
+                                                                            onChange={() => toggleQuestionFollowup(idx)} 
+                                                                            className="sr-only peer" />
+                                                                        <div className="w-10 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                                                                    </div>
+                                                                    <span className={`text-[11px] font-bold transition-colors ${qUseFollowup ? 'text-emerald-700' : 'text-slate-400'}`}>
+                                                                        심층 질문 {qUseFollowup ? '활성화됨' : '비활성'}
+                                                                    </span>
+                                                                </label>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 );
