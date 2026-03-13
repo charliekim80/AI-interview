@@ -476,6 +476,44 @@
             70% { box-shadow: 0 0 0 10px rgba(6, 182, 212, 0); }
             100% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0); }
         }
+
+        /* ── Survey Stars ── */
+        .star-rating {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin: 24px 0;
+        }
+
+        .star {
+            font-size: 32px;
+            cursor: pointer;
+            color: #334155;
+            transition: all 0.2s;
+        }
+
+        .star.selected {
+            color: #fbbf24;
+            transform: scale(1.2);
+            text-shadow: 0 0 10px rgba(251, 191, 36, 0.4);
+        }
+
+        .survey-textarea {
+            width: 100%;
+            background: rgba(51, 65, 85, 0.5);
+            border: 1px solid #475569;
+            border-radius: 12px;
+            padding: 14px;
+            color: #fff;
+            font-size: 14px;
+            resize: none;
+            margin-top: 10px;
+        }
+
+        .survey-textarea:focus {
+            outline: none;
+            border-color: #06b6d4;
+        }
     </style>
 </head>
 
@@ -538,7 +576,7 @@
                         <input type="checkbox" id="privacyConsent"
                             style="width:16px; height:16px; margin-top:2px; flex-shrink:0;" />
                         <span style="font-size:13px; color:#cbd5e1; line-height:1.5;">
-                            [필수] 본인은 TecAce AI 면접 진행을 위해 이름, 이메일, 지원 정보, 면접 음성 및 텍스트 데이터, AI 분석 결과가 수집 및 이용되는 것에 동의합니다.
+                            [필수] 본인은 TecAce AI 면접 진행을 위해 이름, 이메일, 지원 정보, 면접 음성 및 텍스트 데이터, AI 분석 결과가 수집 및 이용되는 것에 동의합니다. 수집된 정보는 채용 절차 종료 후 관련 법령에 따라 파기됩니다.
                         </span>
                     </label>
                 </div>
@@ -621,7 +659,7 @@
 
             <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px;">
                 <div class="question-num" id="questionNum">질문 1 / ?</div>
-                <div id="followupBadge" class="badge badge-green hidden pulse-badge" style="padding: 4px 10px; font-size: 11px;">심층 꼬리 질문</div>
+                <div id="followupBadge" class="badge badge-green hidden pulse-badge" style="padding: 4px 10px; font-size: 11px;">심층 질문</div>
             </div>
             <div class="question-box">
                 <div class="question-text">
@@ -664,6 +702,9 @@
                 <div class="transcript-box" id="transcriptBox">
                     <span id="finalText"></span><span class="interim-text" id="interimText"></span>
                 </div>
+                <p style="font-size:11px; color:#64748b; margin-bottom:12px; line-height:1.4;">
+                    * 음성 인식 결과는 발음이나 주변 소음에 따라 실제와 다를 수 있으며, 면접관이 최종 검토 시 참고 자료로 활용됩니다.
+                </p>
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <span class="timer" id="timerDisplay">0:00</span>
                     <button onclick="clearTranscript()"
@@ -710,21 +751,37 @@
                 </svg>
             </div>
             <h1 style="font-size:32px; font-weight:800; margin-bottom:10px;">면접 완료! 🎉</h1>
-            <p style="color:#94a3b8; font-size:16px; margin-bottom:16px;">답변이 성공적으로 제출되었습니다.</p>
-            <p style="color:#e2e8f0; font-size:18px; font-weight:600; margin-bottom:32px;">면접에 참여해 주셔서 감사합니다.</p>
-            <div class="card" style="text-align:left;">
-                <div
-                    style="background:rgba(6,182,212,0.08); border:1px solid rgba(6,182,212,0.2); border-radius:12px; padding:18px; margin-bottom:20px;">
-                    <p style="font-size:13px; color:#06b6d4; font-weight:600; margin-bottom:8px;">📊 AI 분석 진행 중</p>
-                    <p style="font-size:14px; color:#e2e8f0; line-height:1.6;">
-                        제출된 답변이 AI에 의해 검토 및 분석 중입니다.<br>
-                        향후 일정은 채용 담당자를 통하여 연락드리겠습니다.
-                    </p>
+            <p style="color:#94a3b8; font-size:16px; margin-bottom:32px;">답변이 성공적으로 제출되었습니다.</p>
+            
+            <div class="card">
+                <h3 style="font-size:18px; font-weight:700; margin-bottom:16px;">잠시만요! 👋</h3>
+                <p style="color:#cbd5e1; font-size:14px; margin-bottom:24px;">TecAce AI 면접은 어떠셨나요?<br>더 나은 경험을 위해 짧은 설문에 참여해 주세요.</p>
+                <button class="btn btn-primary" onclick="showStep('step6')">설문 참여하고 마치기</button>
+            </div>
+        </div>
+
+        <!-- STEP 6: Survey -->
+        <div id="step6" class="content-wrapper hidden text-center">
+            <div class="card">
+                <h2 style="font-size:24px; font-weight:700; margin-bottom:8px;">TecAce AI Interview Survey</h2>
+                <p style="color:#94a3b8; font-size:14px; margin-bottom:24px;">면접 경험을 평가해 주세요 (1~5점)</p>
+
+                <div class="star-rating" id="starRating">
+                    <span class="star" data-value="1">★</span>
+                    <span class="star" data-value="2">★</span>
+                    <span class="star" data-value="3">★</span>
+                    <span class="star" data-value="4">★</span>
+                    <span class="star" data-value="5">★</span>
                 </div>
-                <div style="text-align:center; padding-top:10px; border-top:1px solid rgba(255,255,255,0.1);">
-                    <p style="color:#94a3b8; font-size:14px; font-weight:500;">채용담당자 <span style="color:#06b6d4;">gxhr@tecace.com</span></p>
-                    <p style="color:#64748b; font-size:12px; margin-top:8px;">창을 닫으셔도 됩니다.</p>
+
+                <div class="form-group" style="text-align:left;">
+                    <label>(선택) 추가로 개선이 필요한 점이나 코멘트가 있다면 작성해 주세요.</label>
+                    <textarea id="surveyComment" class="survey-textarea" rows="3" placeholder="의견을 남겨주세요"></textarea>
                 </div>
+
+                <button class="btn btn-primary" id="submitSurveyBtn" onclick="handleSurveySubmit()" disabled>
+                    의견 제출하고 완료
+                </button>
             </div>
         </div>
 
@@ -749,6 +806,8 @@
         let timerInterval = null;
         let timerSec = 0;
         const MAX_SEC = 300;    // 5분 제한
+        let wakeLock = null;
+        let selectedRating = 0;
 
         // ── 초기화 ─────────────────────────────────────────────────
         window.addEventListener('DOMContentLoaded', async () => {
@@ -791,10 +850,34 @@
 
         // ── Step 제어 ───────────────────────────────────────────────
         function showStep(id) {
-            ['step0', 'step1', 'step2', 'step3', 'step4', 'step5', 'stepError'].forEach(s => {
+            ['step0', 'step1', 'step2', 'step3', 'step4', 'step5', 'step6', 'stepError'].forEach(s => {
                 document.getElementById(s).classList.add('hidden');
             });
             document.getElementById(id).classList.remove('hidden');
+
+            if (id === 'step3') requestWakeLock();
+            if (id === 'step5' || id === 'step6') releaseWakeLock();
+        }
+
+        // ── Screen Wake Lock (화면 꺼짐 방지) ───────────────────────
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('Wake Lock is active');
+                }
+            } catch (err) {
+                console.error(`${err.name}, ${err.message}`);
+            }
+        }
+
+        function releaseWakeLock() {
+            if (wakeLock !== null) {
+                wakeLock.release().then(() => {
+                    wakeLock = null;
+                    console.log('Wake Lock is released');
+                });
+            }
         }
 
         function showError(title, msg) {
@@ -1085,6 +1168,58 @@
                 currentQIdx = answers.length - 1;
                 answers.pop();
                 renderQuestion();
+            }
+        }
+
+        // ── 설문 관련 ─────────────────────────────────────────────
+        document.querySelectorAll('.star').forEach(star => {
+            star.addEventListener('click', (e) => {
+                selectedRating = parseInt(e.target.dataset.value);
+                document.querySelectorAll('.star').forEach(s => {
+                    s.classList.toggle('selected', parseInt(s.dataset.value) <= selectedRating);
+                });
+                document.getElementById('submitSurveyBtn').disabled = false;
+            });
+        });
+
+        async function handleSurveySubmit() {
+            const comment = document.getElementById('surveyComment').value.trim();
+            const btn = document.getElementById('submitSurveyBtn');
+            btn.disabled = true;
+            btn.textContent = '제출 중...';
+
+            try {
+                await fetch(`${API_BASE}/api/interviews/${interviewToken}/survey`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ rating: selectedRating, comment })
+                });
+                
+                // 최종 완료 화면으로 교체 (step6 내용을 감사 메시지로 변경)
+                document.getElementById('step6').innerHTML = `
+                    <div class="success-icon">
+                        <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                            <polyline points="22 4 12 14.01 9 11.01" />
+                        </svg>
+                    </div>
+                    <h1 style="font-size:32px; font-weight:800; margin-bottom:10px;">참여해 주셔서 감사합니다!</h1>
+                    <p style="color:#94a3b8; font-size:16px; margin-bottom:32px;">보내주신 의견은 서비스 개선에 큰 도움이 됩니다.</p>
+                    <div class="card" style="text-align:left;">
+                        <p style="font-size:14px; color:#e2e8f0; line-height:1.6; margin-bottom:16px;">
+                            제출된 면접 답변은 AI에 의해 분석 중이며, 채용 담당자가 검토 후 연락드릴 예정입니다.
+                        </p>
+                        <div style="text-align:center; padding-top:10px; border-top:1px solid rgba(255,255,255,0.1);">
+                            <p style="color:#94a3b8; font-size:14px; font-weight:500;">채용담당자 <span style="color:#06b6d4;">gxhr@tecace.com</span></p>
+                            <p style="color:#64748b; font-size:12px; margin-top:8px;">이제 이 창을 닫으셔도 됩니다.</p>
+                        </div>
+                    </div>
+                `;
+            } catch (e) {
+                console.error(e);
+                alert('설문 제출 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
+                btn.disabled = false;
+                btn.textContent = '의견 제출하고 완료';
             }
         }
     </script>

@@ -146,7 +146,7 @@ export default function CandidatesPanel() {
             }
 
             // Step 2: AI 질문 생성
-            setLoadingStage('이력서 및 직무를 분석하여 AI 질문 생성 중 (최대 30초)...');
+            setLoadingStage('AI기반 질문 생성 중 (최대 30초)');
             setLoadingAI(true);
 
             const resAI = await api.post('/api/ai/generate-questions', {
@@ -161,7 +161,7 @@ export default function CandidatesPanel() {
             // 생성 완료 → 모든 질문 선택 기본값 + 개별 꼬리질문 옵션 기본 활성화
             const transformedQs = resAI.data.questions.map(q => ({
                 text: typeof q === 'string' ? q : q.text,
-                use_followup: true
+                use_followup: false // 요청에 따라 기본값 OFF 설정
             }));
             
             setGeneratedQuestions(transformedQs);
@@ -409,26 +409,6 @@ export default function CandidatesPanel() {
                             </div>
                         </div>
 
-                        {/* AI Options */}
-                        <div className="bg-blue-50/50 rounded-2xl p-5 border border-blue-100/50">
-                            <h4 className="text-sm font-bold text-blue-800 mb-4 flex items-center gap-2">
-                                <Bot className="w-4 h-4" /> AI 면접 옵션
-                            </h4>
-                            <div className="flex items-center gap-3">
-                                <label className="flex items-center gap-2 cursor-pointer group">
-                                    <div className="relative">
-                                        <input type="checkbox" checked={form.use_followup} 
-                                            onChange={e => setForm({ ...form, use_followup: e.target.checked })} 
-                                            className="sr-only peer" />
-                                        <div className="w-10 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                    </div>
-                                    <span className="text-sm font-semibold text-slate-700 group-hover:text-blue-700 transition-colors">실시간 꼬리 질문(Follow-up) 활성화</span>
-                                </label>
-                                <p className="text-[11px] text-slate-500 bg-white/50 px-2 py-1 rounded-md border border-slate-100">
-                                    지원자의 답변을 실시간 분석하여 AI가 심층 질문을 1회 추가합니다.
-                                </p>
-                            </div>
-                        </div>
 
                         <div className="pt-4 border-t border-slate-100">
                             <button onClick={handleGenerateQuestions} disabled={isTransacting}

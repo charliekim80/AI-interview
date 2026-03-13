@@ -59,10 +59,7 @@ router.get('/candidate/:id', async (req, res) => {
         if (error) throw error;
         if (!iRows || iRows.length === 0) return res.status(404).json({ error: '면접 세션이 없습니다.' });
         
-        const host = req.get('host');
-        const protocol = req.protocol;
-        const baseUrl = process.env.FRONTEND_URL || `${protocol}://${host}`;
-
+        const row = iRows[0];
         res.json({
             ...row,
             candidate_name: row.candidates?.name,
@@ -195,6 +192,25 @@ router.post('/:token/reset', async (req, res) => {
         await supabase.from('candidates').update({ ai_score: null, status: 'Invited' }).eq('id', row.candidate_id);
 
         res.json({ success: true, message: '면접 링크가 초기화 되었습니다. 다시 진행 가능합니다.' });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/interviews/:token/survey - 면접 설문 제출 (Phase 14)
+router.post('/:token/survey', async (req, res) => {
+    const { rating, comment } = req.body;
+    if (!rating) return res.status(400).json({ error: 'rating은 필수입니다.' });
+    try {
+        const supabase = await getSupabase();
+        const { data: interview } = await supabase.from('interviews').select('id').eq('token', req.params.token).maybeSingle();
+        if (!interview) return res.status(404).json({ error: '면접 세션을 찾을 수 없습니다.' });
+
+        const { error } = await supabase.from('surveys').insert([{
+            interview_id: interview.id,
+            rating,
+            comment: comment || ''
+        }]);
+        if (error) throw error;
+        res.json({ success: true });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

@@ -64,7 +64,9 @@ export default function Dashboard({ onNavigate }) {
             alert('면접 링크가 없습니다.');
             return;
         }
-        const link = `http://localhost:3000/interview?token=${candidate.interview_token}`;
+        // 현재 접속 도메인(window.location.origin)을 기준으로 링크 생성 (localhost 방지)
+        const baseUrl = window.location.origin.includes('localhost') ? 'https://ai-interview-ivn0.onrender.com' : window.location.origin;
+        const link = `${baseUrl}/interview?token=${candidate.interview_token}`;
         await navigator.clipboard.writeText(link);
         setCopiedId(candidate.id);
         setTimeout(() => setCopiedId(null), 2000);
@@ -150,8 +152,8 @@ export default function Dashboard({ onNavigate }) {
     const statCards = [
         { label: '전체 지원자', value: stats.totalCandidates ?? 0, icon: Users, color: 'blue' },
         { label: '면접 완료', value: stats.completed ?? 0, icon: CheckCircle2, color: 'emerald' },
-        { label: '진행 중', value: stats.inProgress ?? 0, icon: PlayCircle, color: 'amber' },
-        { label: '평균 AI Score', value: stats.avgAiScore ? `${stats.avgAiScore}` : '-', icon: Award, color: 'purple' },
+        { label: '진행 중', value: stats.inProgress ?? 0, icon: PlayCircle, color: 'indigo' },
+        { label: '평균 AI Score', value: stats.avgAiScore ? `${stats.avgAiScore}` : '-', icon: Award, color: 'violet' },
     ];
 
 
@@ -167,8 +169,8 @@ export default function Dashboard({ onNavigate }) {
                                 <span className="text-sm font-bold text-slate-400 uppercase tracking-wider">{s.label}</span>
                                 <p className="text-3xl font-black text-slate-800 mt-2">{loading ? '—' : s.value}</p>
                             </div>
-                            <div className={`w-14 h-14 rounded-2xl bg-${s.color}-50 flex items-center justify-center border border-${s.color}-100`}>
-                                <Icon className={`w-7 h-7 text-${s.color}-500`} />
+                            <div className={`w-14 h-14 rounded-2xl bg-${s.color}-500/10 flex items-center justify-center border border-${s.color}-500/20`}>
+                                <Icon className={`w-7 h-7 text-${s.color}-600`} />
                             </div>
                         </div>
                     );
