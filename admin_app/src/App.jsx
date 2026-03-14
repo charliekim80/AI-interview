@@ -5,7 +5,9 @@ import JobsPanel from './components/JobsPanel';
 import CandidatesPanel from './components/CandidatesPanel';
 import SettingsPanel from './components/SettingsPanel';
 import InterviewResultPanel from './components/InterviewResultPanel';
+import AnalyticsPanel from './components/AnalyticsPanel';
 import Login from './components/Login';
+import { BarChart2 } from 'lucide-react';
 import './App.css';
 
 const navItems = [
@@ -20,6 +22,7 @@ const sectionLabels = {
   jobs: 'Job Position',
   candidates: 'Candidates',
   'interview-result': 'Interview Result',
+  analytics: 'Analytics',
   settings: 'Settings',
 };
 
@@ -28,6 +31,7 @@ const sectionDescriptions = {
   jobs: '채용 포지션을 등록하고 관리하세요',
   candidates: '지원자를 등록하고 AI 면접 질문을 생성하세요',
   'interview-result': 'Job Position과 지원자를 선택하여 면접 결과를 조회하고 Excel로 내보낼 수 있습니다',
+  analytics: '지원자들의 설문 피드백 결과와 종합 통계를 확인하세요',
   settings: 'OpenAI API Key 및 분류/부서 설정',
 };
 
@@ -88,6 +92,7 @@ export default function App() {
       case 'jobs': return <JobsPanel />;
       case 'candidates': return <CandidatesPanel />;
       case 'interview-result': return <InterviewResultPanel initialCandidateId={activeCandidateId} />;
+      case 'analytics': return <AnalyticsPanel />;
       case 'settings': return <SettingsPanel />;
       default: return <Dashboard onNavigate={handleNavigate} />;
     }
@@ -133,15 +138,23 @@ export default function App() {
 
         {/* Bottom: Settings + User */}
         <div className="border-t border-slate-700/50">
+          <button onClick={() => setActive('analytics')}
+            className={`w-full flex items-center gap-3 px-6 py-4 transition-all ${active === 'analytics'
+              ? 'text-blue-400 bg-slate-800/50'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+              }`}>
+            <BarChart2 className="w-5 h-5" />
+            <span className="font-medium text-sm">Analytics</span>
+          </button>
           <button onClick={() => setActive('settings')}
-            className={`w-full flex items-center gap-3 px-6 py-4 transition-all ${active === 'settings'
+            className={`w-full flex items-center gap-3 px-6 py-4 border-t border-slate-800/50 transition-all ${active === 'settings'
               ? 'text-blue-400 bg-slate-800/50'
               : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
               }`}>
             <Settings className="w-5 h-5" />
             <span className="font-medium text-sm">Settings</span>
           </button>
-          <div className="p-4">
+          <div className="p-4 border-t border-slate-800/50">
             <div className="bg-slate-800/50 rounded-xl px-4 py-3 flex items-center justify-between group">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-bold">

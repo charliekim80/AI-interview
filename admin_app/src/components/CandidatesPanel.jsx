@@ -158,10 +158,10 @@ export default function CandidatesPanel() {
                 throw new Error('생성된 AI 질문이 없습니다.');
             }
 
-            // 생성 완료 → 모든 질문 선택 기본값 + 개별 꼬리질문 옵션 기본 활성화
+            // 생성 완료 → 모든 질문 선택 기본값 + 개별 꼬리질문 옵션
             const transformedQs = resAI.data.questions.map(q => ({
                 text: typeof q === 'string' ? q : q.text,
-                use_followup: false // 요청에 따라 기본값 OFF 설정
+                use_followup: typeof q === 'string' ? false : (q.use_followup ?? false)
             }));
             
             setGeneratedQuestions(transformedQs);

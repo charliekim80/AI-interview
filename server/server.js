@@ -56,6 +56,7 @@ app.use('/api/jobs', require('./routes/jobs'));
 app.use('/api/candidates', require('./routes/candidates'));
 app.use('/api/interviews', require('./routes/interviews'));
 app.use('/api/ai', require('./routes/ai'));
+app.use('/api/surveys', require('./routes/surveys'));
 
 // Dashboard stats 라우트
 app.get('/api/stats', async (req, res) => {
