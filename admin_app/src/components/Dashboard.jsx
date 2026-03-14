@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-    Users, CheckCircle2, PlayCircle, Search,
-    Plus, Copy, Check, Eye, Award, Trash2, Filter, FileText, ChevronDown, UserX
+    Plus, Copy, Check, Eye, Award, Trash2, Filter, FileText, ChevronDown, UserX, Clock
 } from 'lucide-react';
 import api from '../api/client';
 
@@ -15,6 +14,7 @@ const statusConfig = {
 export default function Dashboard({ onNavigate }) {
     const [candidates, setCandidates] = useState([]);
     const [stats, setStats] = useState({});
+    const [activities, setActivities] = useState([]);
     const [loading, setLoading] = useState(true);
 
     // Filters
@@ -36,14 +36,16 @@ export default function Dashboard({ onNavigate }) {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [cRes, sRes] = await Promise.all([
+            const [cRes, sRes, aRes] = await Promise.all([
                 api.get('/api/candidates'),
                 api.get('/api/stats'),
+                api.get('/api/stats/activities')
             ]);
 
             const data = cRes.data;
             setCandidates(data);
             setStats(sRes.data);
+            setActivities(aRes.data);
 
             // Extract unique categories and jobs for filters
             const cats = [...new Set(data.map(c => c.department).filter(Boolean))];
@@ -142,10 +144,10 @@ export default function Dashboard({ onNavigate }) {
         }
     };
 
-    const formatDate = (dateString) => {
+    const formatDateTime = (dateString) => {
         if (!dateString) return '—';
         const d = new Date(dateString);
-        return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
+        return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
     };
 
     // Apply Filters
@@ -159,10 +161,10 @@ export default function Dashboard({ onNavigate }) {
     });
 
     const statCards = [
-        { label: '전체 지원자', value: stats.totalCandidates ?? 0, icon: Users, color: 'blue' },
+        { label: '전체 지원자', value: stats.totalCandidates ?? 0, icon: Users, color: 'indigo' },
         { label: '면접 완료', value: stats.completed ?? 0, icon: CheckCircle2, color: 'emerald' },
-        { label: '진행 중', value: stats.inProgress ?? 0, icon: PlayCircle, color: 'indigo' },
-        { label: '평균 AI Score', value: stats.avgAiScore ? `${stats.avgAiScore}` : '-', icon: Award, color: 'violet' },
+        { label: '진행 중', value: stats.inProgress ?? 0, icon: PlayCircle, color: 'amber' },
+        { label: '평균 AI Score', value: stats.avgAiScore ? `${stats.avgAiScore}` : '-', icon: Award, color: 'blue' },
     ];
 
 
@@ -179,11 +181,39 @@ export default function Dashboard({ onNavigate }) {
                                 <p className="text-3xl font-black text-slate-800 mt-2">{loading ? '—' : s.value}</p>
                             </div>
                             <div className={`w-14 h-14 rounded-2xl bg-${s.color}-500/10 flex items-center justify-center border border-${s.color}-500/20`}>
-                                <Icon className={`w-7 h-7 text-${s.color}-600`} />
+                                <Icon className={`w-7 h-7 text-${s.color}-500 fill-${s.color}-500/20`} />
                             </div>
                         </div>
                     );
                 })}
+            </div>
+
+            {/* Update List Board */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-slate-400" /> Update List Board
+                </h3>
+                <div className="max-h-64 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
+                    {activities.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-6 text-slate-400">
+                            {loading ? '활동 내역을 불러오는 중입니다...' : '최근 업데이트 이력이 없습니다.'}
+                        </div>
+                    ) : (
+                        activities.map(act => (
+                            <div key={act.id} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100 hover:bg-slate-100 transition-colors">
+                                <span className={`flex-shrink-0 w-2.5 h-2.5 rounded-full shadow-sm ${act.type === 'created' ? 'bg-blue-500 shadow-blue-500/30' : 'bg-emerald-500 shadow-emerald-500/30'}`}></span>
+                                <div className="flex-1 min-w-0">
+                                    <p className={`text-[13px] font-semibold truncate ${act.type === 'created' ? 'text-blue-700' : 'text-emerald-700'}`}>
+                                        {act.message}
+                                    </p>
+                                </div>
+                                <div className="text-[11px] text-slate-400 flex-shrink-0 whitespace-nowrap bg-white px-2 py-1 rounded-md border border-slate-200">
+                                    {formatDateTime(act.timestamp)}
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
             </div>
 
             {/* Main Table Area */}

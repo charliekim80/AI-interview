@@ -86,6 +86,60 @@ app.get('/api/stats', async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// Dashboard activities 라우트 (최근 업데이트 현황판 용)
+app.get('/api/stats/activities', async (req, res) => {
+    try {
+        const { getSupabase } = require('./db/supabase');
+        const supabase = await getSupabase();
+        
+        // interviews 테이블에서 생성일(created_at)과 완료일(completed_at)을 가져옴
+        const { data, error } = await supabase
+            .from('interviews')
+            .select(`
+                status,
+                created_at,
+                completed_at,
+                candidates(name)
+            `)
+            .order('created_at', { ascending: false })
+            .limit(50);
+
+        if (error) throw error;
+
+        const activities = [];
+        data.forEach(item => {
+            const candidateName = item.candidates?.name || '알 수 없음';
+            
+            // 1. 생성 로그
+            if (item.created_at) {
+                activities.push({
+                    id: `created-${item.created_at}`,
+                    type: 'created',
+                    message: `${candidateName} 지원자 면접 링크 생성 완료`,
+                    timestamp: item.created_at
+                });
+            }
+            
+            // 2. 완료 로그
+            if (item.completed_at && item.status === 'Completed') {
+                activities.push({
+                    id: `completed-${item.completed_at}`,
+                    type: 'completed',
+                    message: `${candidateName} 면접 완료`,
+                    timestamp: item.completed_at
+                });
+            }
+        });
+
+        // 최신순 정렬 후 상위 30건 반환 (프론트에서 8건 보여줌)
+        activities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        res.json(activities.slice(0, 30));
+
+    } catch (e) { 
+        res.status(500).json({ error: e.message }); 
+    }
+});
+
 // ─── Health Check ────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', version: 'v1.3.1-cors-fixed', timestamp: new Date().toISOString(), port: PORT });
