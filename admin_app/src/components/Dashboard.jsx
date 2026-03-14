@@ -120,8 +120,17 @@ export default function Dashboard({ onNavigate }) {
             const link = document.createElement('a');
             link.href = url;
 
-            // Extract original extension or fallback to .pdf
-            const extMatch = candidate.resume_path.match(/\.([^.]+)$/);
+            let filename = candidate.resume_path;
+            try {
+                const parsed = JSON.parse(filename);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    filename = parsed[0];
+                } else if (typeof parsed === 'string') {
+                    filename = parsed;
+                }
+            } catch (err) {}
+
+            const extMatch = filename.match(/\.([^.]+)$/);
             const ext = extMatch ? extMatch[1] : 'pdf';
 
             link.setAttribute('download', `${candidate.name}_이력서.${ext}`);
