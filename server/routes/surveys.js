@@ -48,4 +48,21 @@ router.get('/', async (req, res) => {
     }
 });
 
+// DELETE /api/surveys/:id - 특정 설문 결과 삭제
+router.delete('/:id', async (req, res) => {
+    try {
+        const supabase = await getSupabase();
+        const { error } = await supabase
+            .from('surveys')
+            .delete()
+            .eq('id', req.params.id);
+
+        if (error) throw error;
+        res.json({ success: true });
+    } catch (e) {
+        console.error('[Surveys] DELETE Error:', e.message);
+        res.status(500).json({ error: e.message });
+    }
+});
+
 module.exports = router;

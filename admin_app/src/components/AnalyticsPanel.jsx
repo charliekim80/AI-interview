@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BarChart2, Star, MessageSquare, Loader2, Calendar } from 'lucide-react';
+import { BarChart2, Star, MessageSquare, Loader2, Calendar, Trash2 } from 'lucide-react';
 import api from '../api/client';
 
 export default function AnalyticsPanel() {
@@ -22,6 +22,17 @@ export default function AnalyticsPanel() {
             setError('설문 데이터를 불러오지 못했습니다.');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDeleteSurvey = async (id, name) => {
+        if (!window.confirm(`"${name}" 지원자의 설문 피드백을 삭제하시겠습니까?`)) return;
+        try {
+            await api.delete(`/api/surveys/${id}`);
+            fetchSurveys();
+        } catch (e) {
+            console.error(e);
+            alert('설문 삭제에 실패했습니다.');
         }
     };
 
@@ -143,6 +154,7 @@ export default function AnalyticsPanel() {
                                     <th className="py-4 px-6 text-xs font-bold text-slate-500 uppercase tracking-wider w-[120px]">평점</th>
                                     <th className="py-4 px-6 text-xs font-bold text-slate-500 uppercase tracking-wider">코멘트 (Comment)</th>
                                     <th className="py-4 px-6 text-xs font-bold text-slate-500 uppercase tracking-wider w-[160px] text-right">응답 일시</th>
+                                    <th className="py-4 px-6 text-xs font-bold text-slate-500 uppercase tracking-wider w-[80px] text-center">관리</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -170,6 +182,15 @@ export default function AnalyticsPanel() {
                                                 <Calendar className="w-3.5 h-3.5" />
                                                 {formatDate(survey.created_at)}
                                             </div>
+                                        </td>
+                                        <td className="py-4 px-6 align-top text-center">
+                                            <button 
+                                                onClick={() => handleDeleteSurvey(survey.id, survey.candidate_name)}
+                                                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                title="설문 삭제"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}

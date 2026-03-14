@@ -801,6 +801,7 @@
         let isFollowUp = false; // Phase 11: 꼬리질문 여부
         let answers = [];     // [{ questionIndex, question, answer, isFollowUp }]
         let finalTranscript = '';
+        let lastFinalSnippet = ''; // STT 중복 방지 캐시
         let recognition = null;
         let isRecording = false;
         let timerInterval = null;
@@ -976,7 +977,12 @@
                 for (let i = event.resultIndex; i < event.results.length; i++) {
                     const t = event.results[i][0].transcript;
                     if (event.results[i].isFinal) {
-                        finalTranscript += t;
+                        const tTrim = t.trim();
+                        // 직전 확정 문장과 완전히 동일한 경우 반복 인식 버그로 간주하여 무시
+                        if (tTrim && tTrim !== lastFinalSnippet) {
+                            finalTranscript += (finalTranscript.endsWith(' ') ? '' : ' ') + tTrim;
+                            lastFinalSnippet = tTrim;
+                        }
                     } else {
                         interim = t;
                     }
@@ -1065,6 +1071,7 @@
             clearInterval(timerInterval);
             timerSec = 0;
             finalTranscript = '';
+            lastFinalSnippet = '';
             document.getElementById('micBtn').classList.remove('recording');
             document.getElementById('finalText').textContent = '';
             document.getElementById('interimText').textContent = '';
