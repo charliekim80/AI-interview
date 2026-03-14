@@ -17,17 +17,6 @@ const upload = multer({
     }
 });
 
-// Supabase Storage 'resumes' 버킷이 없으면 자동 생성
-async function ensureBucket(supabase) {
-    const { data: buckets } = await supabase.storage.listBuckets();
-    const exists = buckets?.some(b => b.name === 'resumes');
-    if (!exists) {
-        console.log('[Storage] resumes 버킷이 없어 자동 생성합니다.');
-        const { error } = await supabase.storage.createBucket('resumes', { public: false });
-        if (error) throw new Error(`버킷 생성 실패: ${error.message}`);
-    }
-}
-
 // GET /api/candidates
 router.get('/', async (req, res) => {
     try {
@@ -98,16 +87,22 @@ router.post('/', upload.array('resumes', 3), async (req, res) => {
         const uploadedFiles = [];
 
         if (req.files && req.files.length > 0) {
-            await ensureBucket(supabase);
             for (const file of req.files) {
-                const ext = path.extname(file.originalname);
-                const fileName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
-                const { data, error } = await supabase.storage
-                    .from('resumes')
-                    .upload(fileName, file.buffer, { contentType: file.mimetype });
-                
-                if (error) throw error;
-                uploadedFiles.push(fileName);
+                try {
+                    const ext = path.extname(file.originalname);
+                    const fileName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+                    const { error } = await supabase.storage
+                        .from('resumes')
+                        .upload(fileName, file.buffer, { contentType: file.mimetype });
+                    if (error) {
+                        console.warn(`[Storage] 파일 업로드 실패 (${file.originalname}): ${error.message}`);
+                        console.warn('[Storage] Supabase Dashboard > Storage에서 "resumes" 버킷을 수동으로 생성해주세요.');
+                    } else {
+                        uploadedFiles.push(fileName);
+                    }
+                } catch (uploadErr) {
+                    console.warn('[Storage] 업로드 예외:', uploadErr.message);
+                }
             }
         }
 
@@ -146,18 +141,26 @@ router.put('/:id', upload.array('resumes', 3), async (req, res) => {
         let resumePath = existing.resume_path;
         if (req.files && req.files.length > 0) {
             const uploadedFiles = [];
-            await ensureBucket(supabase);
             for (const file of req.files) {
-                const ext = path.extname(file.originalname);
-                const fileName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
-                const { error } = await supabase.storage.from('resumes').upload(fileName, file.buffer, { contentType: file.mimetype });
-                if (error) throw error;
-                uploadedFiles.push(fileName);
+                try {
+                    const ext = path.extname(file.originalname);
+                    const fileName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+                    const { error } = await supabase.storage.from('resumes').upload(fileName, file.buffer, { contentType: file.mimetype });
+                    if (error) {
+                        console.warn(`[Storage] 파일 업로드 실패 (${file.originalname}): ${error.message}`);
+                    } else {
+                        uploadedFiles.push(fileName);
+                    }
+                } catch (uploadErr) {
+                    console.warn('[Storage] 업로드 예외:', uploadErr.message);
+                }
             }
-            resumePath = JSON.stringify(uploadedFiles);
-            
-            // 기존 파일 삭제
-            if (existing.resume_path) {
+            if (uploadedFiles.length > 0) {
+                resumePath = JSON.stringify(uploadedFiles);
+            }
+
+            // 기존 파일 삭제 (새 파일 업로드 성공 시에만)
+            if (uploadedFiles.length > 0 && existing.resume_path) {
                 try {
                     const oldPaths = JSON.parse(existing.resume_path);
                     const pathsToDel = Array.isArray(oldPaths) ? oldPaths : [oldPaths];
