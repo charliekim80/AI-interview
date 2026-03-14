@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Interview 응시 가이드 | TecAce</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons (via CDN) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --secondary: #64748b;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Pretendard', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        .nav-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: var(--text-main);
+            font-weight: 800;
+            font-size: 1.25rem;
+            letter-spacing: -0.025em;
+        }
+
+        .logo img {
+            height: 32px;
+            width: auto;
+        }
+
+        .hero {
+            padding: 5rem 0 4rem;
+            text-align: center;
+            background: radial-gradient(circle at top right, #eff6ff 0%, transparent 40%),
+                        radial-gradient(circle at bottom left, #f5f3ff 0%, transparent 40%);
+        }
+
+        .hero h1 {
+            font-size: 2.75rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            letter-spacing: -0.05em;
+            background: linear-gradient(to right, #1e293b, #2563eb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: 1.125rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .section {
+            margin-bottom: 4rem;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: var(--text-main);
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 1.25rem;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary);
+        }
+
+        .card-icon {
+            width: 3rem;
+            height: 3rem;
+            background: #eff6ff;
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+        }
+
+        .card h3 {
+            font-size: 1.125rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        .card p {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+        }
+
+        .process-list {
+            list-style: none;
+            counter-reset: my-counter;
+        }
+
+        .process-item {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: white;
+            border-radius: 1rem;
+            border: 1px solid var(--border);
+            position: relative;
+        }
+
+        .process-item::before {
+            counter-increment: my-counter;
+            content: counter(my-counter);
+            font-weight: 800;
+            font-size: 2rem;
+            color: var(--border);
+            position: absolute;
+            right: 1.5rem;
+            top: 1rem;
+        }
+
+        .process-icon {
+            flex-shrink: 0;
+            width: 3.5rem;
+            height: 3.5rem;
+            background: #f1f5f9;
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-main);
+        }
+
+        .process-content h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .process-content p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .tip-box {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: white;
+            padding: 3rem;
+            border-radius: 2rem;
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+            margin-top: 2rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .tip-content h2 {
+            font-size: 1.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .tip-content ul {
+            list-style: none;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .tip-content li {
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            opacity: 0.9;
+        }
+
+        .footer {
+            padding: 4rem 0;
+            text-align: center;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2rem; }
+            .tip-box { flex-direction: column; text-align: center; padding: 2rem; }
+            .tip-content ul { grid-template-columns: 1fr; }
+            .tip-content li { justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="container nav-content">
+            <a href="#" class="logo">
+                <img src="TecAce_logo_White.png" alt="TecAce Logo" onerror="this.src='https://via.placeholder.com/32'">
+                <span>TecAce</span>
+            </a>
+            <div style="font-size: 0.8rem; font-weight: 600; color: var(--primary); background: #eff6ff; padding: 0.25rem 0.75rem; border-radius: 2rem; border: 1px solid #dbeafe;">
+                AI INTERVIEW GUIDE
+            </div>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="container font-bold">
+            <h1>더 나은 커리어의 시작,<br>AI 면접 가이드</h1>
+            <p>TecAce AI 면접 플랫폼은 지원자님의 역량을 가장 편안하고 공정하게 보여줄 수 있는 환경을 제공합니다. 응시 전 아래 수칙을 확인해 주세요.</p>
+        </div>
+    </header>
+
+    <main class="container">
+        
+        <!-- Section 1: Preparation -->
+        <section class="section">
+            <h2 class="section-title"><i data-lucide="check-circle-2" class="w-6 h-6"></i>응시 전 준비사항</h2>
+            <div class="grid">
+                <div class="card">
+                    <div class="card-icon"><i data-lucide="video"></i></div>
+                    <h3>카메라 및 마이크 점검</h3>
+                    <p>PC 또는 스마트폰의 카메라를 정면으로 응시해주세요. 음성이 명확하게 녹음될 수 있는 조용한 장소인지 확인이 필요합니다.</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon"><i data-lucide="wifi"></i></div>
+                    <h3>네트워크 환경</h3>
+                    <p>안정적인 Wi-Fi 또는 데이터 연결이 필요합니다. 면접 도중 끊김이 발생하지 않도록 신호가 강한 곳에서 진행해 주세요.</p>
+                </div>
+                <div class="card">
+                    <div class="card-icon"><i data-lucide="browser"></i></div>
+                    <h3>브라우저 설정</h3>
+                    <p>Chrome 또는 Safari 최신 버전을 권장합니다. 카메라/마이크 접근 권한 팝업이 뜨면 '허용'을 반드시 클릭해 주세요.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 2: Process -->
+        <section class="section">
+            <h2 class="section-title"><i data-lucide="play-circle" class="w-6 h-6"></i>면접 진행 단계</h2>
+            <div class="process-list">
+                <div class="process-item">
+                    <div class="process-icon"><i data-lucide="mail"></i></div>
+                    <div class="process-content">
+                        <h3>초대 링크 접속</h3>
+                        <p>이메일 또는 메시지로 수신된 전용 면접 링크를 클릭하여 페이지에 접속합니다.</p>
+                    </div>
+                </div>
+                <div class="process-item">
+                    <div class="process-icon"><i data-lucide="shield-check"></i></div>
+                    <div class="process-content">
+                        <h3>본인 인증 및 동의</h3>
+                        <p>성함과 이메일을 입력하여 본인임을 확인하고, 공정한 평가를 위한 개인정보 수집 및 STT 활용 동의를 진행합니다.</p>
+                    </div>
+                </div>
+                <div class="process-item">
+                    <div class="process-icon"><i data-lucide="mic"></i></div>
+                    <div class="process-content">
+                        <h3>AI 인터뷰 수행</h3>
+                        <p>AI가 제시하는 질문을 듣고(또는 읽고) 답변합니다. 질문에 따라 보다 깊이 있는 '심층 질문'이 이어질 수 있습니다.</p>
+                    </div>
+                </div>
+                <div class="process-item">
+                    <div class="process-icon"><i data-lucide="star"></i></div>
+                    <div class="process-content">
+                        <h3>설문 및 종료</h3>
+                        <p>모든 질문이 끝나면 면접 경험에 대한 간단한 설문(별점)을 진행하며 면접 과정이 종료됩니다.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: Professional Tips -->
+        <div class="tip-box">
+            <div style="flex-shrink: 0; background: #2563eb; width: 5rem; height: 5rem; border-radius: 1.5rem; display: flex; align-items: center; justify-content: center;">
+                <i data-lucide="lightbulb" style="width: 2.5rem; height: 2.5rem;"></i>
+            </div>
+            <div class="tip-content">
+                <h2>면접 고득점을 위한 팁</h2>
+                <ul>
+                    <li><i data-lucide="check" class="w-4 h-4 text-blue-400"></i>카메라를 사람의 눈이라 생각하고 응시하기</li>
+                    <li><i data-lucide="check" class="w-4 h-4 text-blue-400"></i>두괄식으로 명확하고 간결하게 답변하기</li>
+                    <li><i data-lucide="check" class="w-4 h-4 text-blue-400"></i>자신의 경험(STAR 기법) 중심으로 구체화하기</li>
+                    <li><i data-lucide="check" class="w-4 h-4 text-blue-400"></i>지나치게 빠르거나 느리지 않은 적당한 속도 유지</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Section 4: Privacy & Notice -->
+        <section class="section" style="margin-top: 5rem; text-align: center;">
+            <div style="background: #f1f5f9; padding: 2rem; border-radius: 1.5rem; border: 1px solid var(--border);">
+                <h3 style="font-weight: 700; margin-bottom: 0.5rem;">법적 고지 및 개인정보 보호</h3>
+                <p style="font-size: 0.875rem; color: var(--text-muted); max-width: 600px; margin: 0 auto;">
+                    응시자의 답변 내용은 AI 기술(STT)을 활용해 텍스트로 변환되어 채용 담당자의 평가 자료로만 사용됩니다. 
+                    수집된 개인정보는 관련 법령에 따라 철저히 보호되며, 보존 기간 종료 후 지체 없이 파기됩니다.
+                </p>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 TecAce AI Interview Services. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>
