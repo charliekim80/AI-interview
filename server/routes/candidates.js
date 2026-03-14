@@ -17,6 +17,17 @@ const upload = multer({
     }
 });
 
+// Supabase Storage 'resumes' 버킷이 없으면 자동 생성
+async function ensureBucket(supabase) {
+    const { data: buckets } = await supabase.storage.listBuckets();
+    const exists = buckets?.some(b => b.name === 'resumes');
+    if (!exists) {
+        console.log('[Storage] resumes 버킷이 없어 자동 생성합니다.');
+        const { error } = await supabase.storage.createBucket('resumes', { public: false });
+        if (error) throw new Error(`버킷 생성 실패: ${error.message}`);
+    }
+}
+
 // GET /api/candidates
 router.get('/', async (req, res) => {
     try {
@@ -87,6 +98,7 @@ router.post('/', upload.array('resumes', 3), async (req, res) => {
         const uploadedFiles = [];
 
         if (req.files && req.files.length > 0) {
+            await ensureBucket(supabase);
             for (const file of req.files) {
                 const ext = path.extname(file.originalname);
                 const fileName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
@@ -134,6 +146,7 @@ router.put('/:id', upload.array('resumes', 3), async (req, res) => {
         let resumePath = existing.resume_path;
         if (req.files && req.files.length > 0) {
             const uploadedFiles = [];
+            await ensureBucket(supabase);
             for (const file of req.files) {
                 const ext = path.extname(file.originalname);
                 const fileName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
