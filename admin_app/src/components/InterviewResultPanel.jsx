@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileSpreadsheet, ChevronDown, Award, CheckCircle2, ChevronLeft, Loader2 } from 'lucide-react';
+import { FileSpreadsheet, ChevronDown, Award, CheckCircle2, Loader2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import api from '../api/client';
 
@@ -22,14 +22,12 @@ export default function InterviewResultPanel({ initialCandidateId }) {
         api.get('/api/jobs').then(r => setJobs(r.data)).catch(console.error);
         api.get('/api/candidates').then(r => {
             setCandidates(r.data);
-            // 만약 Dashboard에서 ID를 넘겨받았다면 초기값 설정
             if (initialCandidateId) {
                 setSelectedCandidateId(String(initialCandidateId));
             }
         }).catch(console.error);
     }, [initialCandidateId]);
 
-    // 초기 ID가 있을 때 자동으로 결과 조회
     useEffect(() => {
         if (initialCandidateId && candidates.length > 0 && selectedCandidateId === String(initialCandidateId)) {
             handleViewResult();
@@ -40,7 +38,6 @@ export default function InterviewResultPanel({ initialCandidateId }) {
         if (selectedJobId) {
             const filtered = candidates.filter(c => String(c.job_id) === String(selectedJobId) && c.interview_token);
             setFilteredCandidates(filtered);
-            // 초기 로드 중에는 초기화하지 않음
             if (!initialCandidateId) setSelectedCandidateId('');
             setResultData(null);
         } else {
@@ -71,6 +68,41 @@ export default function InterviewResultPanel({ initialCandidateId }) {
         }
     };
 
+    // Q1/Q1-1 번호 체계 생성 헬퍼
+    const buildQuestionLabels = (answerAnalysis = []) => {
+        const labels = [];
+        const mainCounters = {}; // questionIndex별 메인 번호
+        let mainNum = 0;
+
+        answerAnalysis.forEach((a) => {
+            if (!a.isFollowUp) {
+                mainNum++;
+                mainCounters[mainNum] = { count: 0, displayNum: mainNum };
+                labels.push(`Q${mainNum}`);
+            } else {
+                // 이전 메인 질문의 꼬리질문
+                const parentNum = mainNum;
+                mainCounters[parentNum].count++;
+                const subNum = mainCounters[parentNum].count + 1;
+                // 이전 라벨이 Q{n}이었다면 Q{n}-1로, 꼬리질문은 Q{n}-2 형식
+                // 첫 번째 꼬리질문: 직전 메인을 Q{n}-1로 변경하고 이것은 Q{n}-2
+                if (mainCounters[parentNum].count === 1) {
+                    // 메인 질문 레이블을 Q{n}-1로 소급 업데이트
+                    for (let k = labels.length - 1; k >= 0; k--) {
+                        if (labels[k] === `Q${parentNum}`) {
+                            labels[k] = `Q${parentNum}-1`;
+                            break;
+                        }
+                    }
+                    labels.push(`Q${parentNum}-2`);
+                } else {
+                    labels.push(`Q${parentNum}-${subNum}`);
+                }
+            }
+        });
+        return labels;
+    };
+
     const handleExportExcel = () => {
         if (!resultData || !resultData.ai_analysis || !candidateInfo) {
             showToast('데이터가 로드되지 않았습니다.', 'error');
@@ -79,8 +111,6 @@ export default function InterviewResultPanel({ initialCandidateId }) {
         
         const { overallScore, recommendation, summary, strengths = [], improvements = [], answerAnalysis = [] } = resultData.ai_analysis;
 
-        // 희망연봉/처우 관련 질문 키워드로 찾기 (하드코딩 인덱스 9 대신)
-        // 만약 includeSalary가 false이면 해당 키워드가 포함된 질문을 제외
         const exportAnswers = includeSalary 
             ? answerAnalysis 
             : answerAnalysis.filter(a => !(a.question.includes('연봉') || a.question.includes('처우')));
@@ -100,22 +130,26 @@ export default function InterviewResultPanel({ initialCandidateId }) {
             ['개선 및 참고사항', improvements.join('\n')]
         ];
 
-        const qnaData = [['번호', '질문 내용', '지원자 답변', 'AI 상세 평가 (피드백)', '부분 점수']];
+        const qnaLabels = buildQuestionLabels(exportAnswers);
+        const qnaData = [['번호', '유형', '질문 내용', '지원자 답변', 'AI 상세 평가 (피드백)', '부분 점수']];
         exportAnswers.forEach((a, index) => {
-            qnaData.push([index + 1, a.question, a.answer || '(답변 없음)', a.feedback, a.score]);
+            const label = qnaLabels[index] || `Q${index + 1}`;
+            const type = a.isFollowUp ? '🔗 심층질문' : '일반';
+            qnaData.push([label, type, a.question, a.answer || '(답변 없음)', a.feedback, a.score]);
         });
 
         try {
             const wb = XLSX.utils.book_new();
-            const wsInfo = XLSX.utils.aoa_to_sheet(infoData);
-            const wsQnA = XLSX.utils.aoa_to_sheet(qnaData);
-            
-            wsInfo['!cols'] = [{ wch: 20 }, { wch: 100 }];
-            wsQnA['!cols'] = [{ wch: 8 }, { wch: 50 }, { wch: 60 }, { wch: 80 }, { wch: 10 }];
-
-            XLSX.utils.book_append_sheet(wb, wsInfo, "종합 결과 요약");
-            XLSX.utils.book_append_sheet(wb, wsQnA, "질문별 상세 분석");
-            
+            const combinedData = [
+                ...infoData,
+                ['', ''],
+                ...qnaData
+            ];
+            const wsCombined = XLSX.utils.aoa_to_sheet(combinedData);
+            wsCombined['!cols'] = [
+                { wch: 10 }, { wch: 12 }, { wch: 55 }, { wch: 55 }, { wch: 75 }, { wch: 10 }
+            ];
+            XLSX.utils.book_append_sheet(wb, wsCombined, "면접 분석 결과");
             const fileName = `${candidateInfo.name}_AI면접분석_${new Date().toISOString().split('T')[0]}.xlsx`;
             XLSX.writeFile(wb, fileName);
             showToast('Excel 다운로드가 완료되었습니다.');
@@ -127,6 +161,64 @@ export default function InterviewResultPanel({ initialCandidateId }) {
 
     const selectCls = "w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white text-black appearance-none cursor-pointer pr-10";
 
+    const renderAnswerCards = (answerAnalysis = []) => {
+        const labels = buildQuestionLabels(answerAnalysis);
+
+        return answerAnalysis.map((a, i) => {
+            const isSalaryQ = a.question.includes('연봉') || a.question.includes('처우');
+            if (!includeSalary && isSalaryQ) return null;
+
+            const label = labels[i] || `Q${i + 1}`;
+            const isFollowUp = a.isFollowUp || false;
+
+            return (
+                <div key={i} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                    {/* 카드 헤더 */}
+                    <div className={`border-b border-slate-100 p-5 flex items-start justify-between gap-4 ${isFollowUp ? 'bg-amber-50/60' : 'bg-slate-50'}`}>
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                <span className={`inline-block px-3 py-1 font-bold text-xs rounded-lg shadow-sm border ${
+                                    isFollowUp 
+                                        ? 'bg-amber-100 text-amber-800 border-amber-200' 
+                                        : 'bg-white border-slate-200 text-slate-600'
+                                }`}>
+                                    {label}
+                                </span>
+                                {isFollowUp && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500 text-white text-[11px] font-bold rounded-full">
+                                        🔗 심층질문
+                                    </span>
+                                )}
+                            </div>
+                            {/* 질문 원문 전체 표시 */}
+                            <p className="font-semibold text-slate-800 text-base leading-relaxed">{a.question}</p>
+                        </div>
+                        {/* 통일된 Score 컬럼 */}
+                        <div className={`px-4 py-2.5 rounded-xl shadow-sm text-center min-w-[80px] flex-shrink-0 border ${
+                            isFollowUp ? 'bg-amber-50 border-amber-200' : 'bg-white border-emerald-100'
+                        }`}>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Score</p>
+                            <p className={`text-xl font-black leading-none ${isFollowUp ? 'text-amber-600' : 'text-emerald-600'}`}>{a.score}</p>
+                        </div>
+                    </div>
+                    {/* 카드 바디 */}
+                    <div className="p-5 grid grid-cols-2 gap-5">
+                        <div>
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">지원자 답변</p>
+                            <div className="bg-slate-50 p-4 rounded-xl text-slate-700 text-sm leading-relaxed whitespace-pre-wrap border border-slate-100">{a.answer || '답변 없음'}</div>
+                        </div>
+                        <div>
+                            <p className={`text-xs font-bold uppercase tracking-wider mb-2 ${isFollowUp ? 'text-amber-600' : 'text-emerald-600'}`}>AI 피드백</p>
+                            <div className={`p-4 rounded-xl text-sm leading-relaxed whitespace-pre-wrap border ${
+                                isFollowUp ? 'bg-amber-50/50 text-amber-900 border-amber-100' : 'bg-emerald-50/50 text-emerald-800 border-emerald-100'
+                            }`}>{a.feedback}</div>
+                        </div>
+                    </div>
+                </div>
+            );
+        });
+    };
+
     return (
         <div className="max-w-5xl space-y-6">
             {toast && (
@@ -135,7 +227,7 @@ export default function InterviewResultPanel({ initialCandidateId }) {
                 </div>
             )}
 
-            {/* ─── Selection Card ─── */}
+            {/* Selection Card */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
                 <div className="flex items-center gap-4 mb-8">
                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
@@ -182,7 +274,7 @@ export default function InterviewResultPanel({ initialCandidateId }) {
                 </div>
             </div>
 
-            {/* ─── Result View ─── */}
+            {/* Result View */}
             {resultData && (
                 <>
                     {!resultData.ai_analysis ? (
@@ -192,7 +284,7 @@ export default function InterviewResultPanel({ initialCandidateId }) {
                         </div>
                     ) : (
                         <>
-                            {/* Header Row */}
+                            {/* Header */}
                             <div className="flex items-center justify-between">
                                 <div>
                                     <h2 className="text-2xl font-bold text-slate-800">{candidateInfo.name} — 면접 분석 결과</h2>
@@ -253,37 +345,17 @@ export default function InterviewResultPanel({ initialCandidateId }) {
                                 </div>
                             </div>
 
-                            {/* QnA Grid */}
+                            {/* QnA Cards */}
                             <div className="space-y-4">
-                                <h3 className="text-xl font-bold text-slate-800">질문별 상세 분석</h3>
-                                {(resultData.ai_analysis.answerAnalysis || []).map((a, i) => {
-                                    const isSalaryQ = a.question.includes('연봉') || a.question.includes('처우');
-                                    if (!includeSalary && isSalaryQ) return null;
-                                    return (
-                                        <div key={i} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                                            <div className="bg-slate-50 border-b border-slate-100 p-5 flex items-start justify-between gap-4">
-                                                <div>
-                                                    <span className="inline-block px-3 py-1 bg-white border border-slate-200 text-slate-600 font-bold text-xs rounded-lg mb-2 shadow-sm">Question {i + 1}</span>
-                                                    <p className="font-semibold text-slate-800 text-lg">{a.question}</p>
-                                                </div>
-                                                <div className="bg-white px-4 py-2 border border-emerald-100 rounded-xl shadow-sm text-center min-w-[80px]">
-                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Score</p>
-                                                    <p className="text-xl font-black text-emerald-600 leading-none">{a.score}</p>
-                                                </div>
-                                            </div>
-                                            <div className="p-5 grid grid-cols-2 gap-5">
-                                                <div>
-                                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">지원자 답변</p>
-                                                    <div className="bg-slate-50 p-4 rounded-xl text-slate-700 text-sm leading-relaxed whitespace-pre-wrap border border-slate-100">{a.answer || '답변 없음'}</div>
-                                                </div>
-                                                <div>
-                                                    <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-2">AI 피드백</p>
-                                                    <div className="bg-emerald-50/50 p-4 rounded-xl text-emerald-800 text-sm leading-relaxed whitespace-pre-wrap border border-emerald-100">{a.feedback}</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
+                                <div className="flex items-center gap-3">
+                                    <h3 className="text-xl font-bold text-slate-800">질문별 상세 분석</h3>
+                                    {(resultData.ai_analysis.answerAnalysis || []).some(a => a.isFollowUp) && (
+                                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-amber-100 text-amber-800 text-xs font-bold rounded-full border border-amber-200">
+                                            🔗 심층질문 포함
+                                        </span>
+                                    )}
+                                </div>
+                                {renderAnswerCards(resultData.ai_analysis.answerAnalysis || [])}
                             </div>
                         </>
                     )}

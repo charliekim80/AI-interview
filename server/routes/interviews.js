@@ -138,7 +138,7 @@ router.post('/:token/answers', async (req, res) => {
             const analysis = await analyzeAnswers(
                 { name: candidateInfo.name },
                 { title: jobInfo.title, department: jobInfo.department, description: jobInfo.description, required_skills: jobInfo.required_skills },
-                confirmedQs.map(q => typeof q === 'string' ? q : q.text), // 텍스트만 추출
+                confirmedQs, // 원본 객체 배열 그대로 전달 (use_followup, text 포함)
                 answers
             );
             

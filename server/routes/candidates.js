@@ -8,13 +8,7 @@ const fs = require('fs');
 const uploadDir = path.join(__dirname, '../uploads');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, uploadDir),
-    filename: (req, file, cb) => {
-        const ext = path.extname(file.originalname);
-        cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
-    }
-});
+const storage = multer.memoryStorage();
 const upload = multer({
     storage, limits: { fileSize: 10 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
@@ -28,7 +22,6 @@ router.get('/', async (req, res) => {
     try {
         const supabase = await getSupabase();
         
-        // jobs 조인 및 interviews 조인으로 최신 토큰 확인
         const { data: rows, error } = await supabase
             .from('candidates')
             .select(`
@@ -41,7 +34,6 @@ router.get('/', async (req, res) => {
         if (error) throw error;
         
         const formattedRows = rows.map(c => {
-            // 가장 최근의 유효한 면접 토큰 찾기
             const validInterviews = c.interviews ? c.interviews.filter(i => i.status !== 'Expired') : [];
             validInterviews.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
             
@@ -68,7 +60,6 @@ router.get('/stats', async (req, res) => {
         const { count: inProg } = await supabase.from('candidates').select('*', { count: 'exact', head: true }).eq('status', 'In Progress');
         const { count: invited } = await supabase.from('interviews').select('*', { count: 'exact', head: true }).neq('status', 'Expired');
         
-        // AI Score 평균 계산
         const { data: scores, error: scErr } = await supabase.from('candidates').select('ai_score').not('ai_score', 'is', null);
         let avgAiScore = null;
         if (!scErr && scores && scores.length > 0) {
@@ -86,16 +77,30 @@ router.get('/stats', async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// POST /api/candidates — 다중 이력서 지원
+// POST /api/candidates — Supabase Storage 연동
 router.post('/', upload.array('resumes', 3), async (req, res) => {
     const { name, email, phone, job_id, department, linkedin, notes } = req.body;
     if (!name || !email) return res.status(400).json({ error: '이름과 이메일은 필수입니다.' });
 
-    const fileNames = req.files ? req.files.map(f => f.filename) : [];
-    const resumePath = fileNames.length > 0 ? JSON.stringify(fileNames) : null;
-
     try {
         const supabase = await getSupabase();
+        const uploadedFiles = [];
+
+        if (req.files && req.files.length > 0) {
+            for (const file of req.files) {
+                const ext = path.extname(file.originalname);
+                const fileName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+                const { data, error } = await supabase.storage
+                    .from('resumes')
+                    .upload(fileName, file.buffer, { contentType: file.mimetype });
+                
+                if (error) throw error;
+                uploadedFiles.push(fileName);
+            }
+        }
+
+        const resumePath = uploadedFiles.length > 0 ? JSON.stringify(uploadedFiles) : null;
+
         const { data: newRow, error: insertErr } = await supabase.from('candidates').insert([{
             name, email, phone: phone || null, job_id: job_id || null, 
             department: department || '', resume_path: resumePath, 
@@ -109,17 +114,12 @@ router.post('/', upload.array('resumes', 3), async (req, res) => {
 
         res.status(201).json(newRow);
     } catch (e) { 
-        // 롤백: 업로드된 파일 삭제 (고아 파일 방지)
-        if (req.files && req.files.length > 0) {
-            req.files.forEach(f => {
-                if (fs.existsSync(f.path)) fs.unlinkSync(f.path);
-            });
-        }
+        console.error('[Candidates] Create Error:', e.message);
         res.status(500).json({ error: e.message }); 
     }
 });
 
-// PUT /api/candidates/:id — 지원자 정보 업데이트 (이력서 포함)
+// PUT /api/candidates/:id — 지원자 정보 업데이트
 router.put('/:id', upload.array('resumes', 3), async (req, res) => {
     const { name, email, phone, job_id, department, linkedin, notes } = req.body;
     const { id } = req.params;
@@ -127,26 +127,28 @@ router.put('/:id', upload.array('resumes', 3), async (req, res) => {
     try {
         const supabase = await getSupabase();
         
-        // 기존 정보 조회
         const { data: existing, error: fetchErr } = await supabase.from('candidates').select('*').eq('id', id).maybeSingle();
         if (fetchErr) throw fetchErr;
         if (!existing) return res.status(404).json({ error: '지원자를 찾을 수 없습니다.' });
 
-        // 새 파일이 있는 경우 처리
         let resumePath = existing.resume_path;
         if (req.files && req.files.length > 0) {
-            const fileNames = req.files.map(f => f.filename);
-            resumePath = JSON.stringify(fileNames);
+            const uploadedFiles = [];
+            for (const file of req.files) {
+                const ext = path.extname(file.originalname);
+                const fileName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+                const { error } = await supabase.storage.from('resumes').upload(fileName, file.buffer, { contentType: file.mimetype });
+                if (error) throw error;
+                uploadedFiles.push(fileName);
+            }
+            resumePath = JSON.stringify(uploadedFiles);
             
-            // 기존 파일 삭제 (Prototype 환경에서는 덮어쓰기 대신 신규 등록이 많으므로 선택사항이나, 여기서는 깔끔하게 삭제 처리)
+            // 기존 파일 삭제
             if (existing.resume_path) {
                 try {
                     const oldPaths = JSON.parse(existing.resume_path);
                     const pathsToDel = Array.isArray(oldPaths) ? oldPaths : [oldPaths];
-                    pathsToDel.forEach(p => {
-                        const fp = path.join(uploadDir, p);
-                        if (fs.existsSync(fp)) fs.unlinkSync(fp);
-                    });
+                    await supabase.storage.from('resumes').remove(pathsToDel);
                 } catch(e) {}
             }
         }
@@ -170,17 +172,11 @@ router.put('/:id', upload.array('resumes', 3), async (req, res) => {
 
         res.json(updated);
     } catch (e) { 
-        // 롤백: 신규 업로드된 파일 삭제
-        if (req.files && req.files.length > 0) {
-            req.files.forEach(f => {
-                if (fs.existsSync(f.path)) fs.unlinkSync(f.path);
-            });
-        }
         res.status(500).json({ error: e.message }); 
     }
 });
 
-// DELETE /api/candidates/:id — 완전 삭제 (모든 이력서 파일 + 면접 데이터 포함)
+// DELETE /api/candidates/:id — 완전 삭제 (Supabase Storage 파일 포함)
 router.delete('/:id', async (req, res) => {
     try {
         const supabase = await getSupabase();
@@ -188,26 +184,17 @@ router.delete('/:id', async (req, res) => {
         if (fetchErr) throw fetchErr;
         if (!c) return res.status(404).json({ error: '지원자를 찾을 수 없습니다.' });
 
-        // 이력서 로컬 파일들 삭제
+        // Supabase Storage 파일들 삭제
         if (c.resume_path) {
             try {
                 const paths = JSON.parse(c.resume_path);
-                if (Array.isArray(paths)) {
-                    paths.forEach(p => {
-                        const fp = path.join(uploadDir, p);
-                        if (fs.existsSync(fp)) fs.unlinkSync(fp);
-                    });
-                } else if (typeof paths === 'string') {
-                    const fp = path.join(uploadDir, paths);
-                    if (fs.existsSync(fp)) fs.unlinkSync(fp);
-                }
+                const pathsToDel = Array.isArray(paths) ? paths : [paths];
+                await supabase.storage.from('resumes').remove(pathsToDel);
             } catch (e) {
-                const fp = path.join(uploadDir, c.resume_path);
-                if (fs.existsSync(fp)) fs.unlinkSync(fp);
+                console.error('[Delete] File Removal Error:', e.message);
             }
         }
 
-        // Supabase DB 삭제 (인터뷰는 CASCADE로 자동 삭제됨)
         const { error: delErr } = await supabase.from('candidates').delete().eq('id', req.params.id);
         if (delErr) throw delErr;
 
@@ -215,7 +202,7 @@ router.delete('/:id', async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// GET /api/candidates/:id/resume
+// GET /api/candidates/:id/resume — Supabase Storage에서 Signed URL 발급
 router.get('/:id/resume', async (req, res) => {
     try {
         const supabase = await getSupabase();
@@ -223,16 +210,17 @@ router.get('/:id/resume', async (req, res) => {
         if (error) throw error;
         if (!c || !c.resume_path) return res.status(404).json({ error: '이력서를 찾을 수 없습니다.' });
         
-        // For compatibility with single item download, we might serve the first file if it's an array
         let tgtPath = c.resume_path;
         try {
             const parsed = JSON.parse(c.resume_path);
             if (Array.isArray(parsed) && parsed.length > 0) tgtPath = parsed[0];
+            else if (typeof parsed === 'string') tgtPath = parsed;
         } catch(e) {}
 
-        const fp = path.join(uploadDir, tgtPath);
-        if (!fs.existsSync(fp)) return res.status(404).json({ error: '파일이 없습니다.' });
-        res.download(fp);
+        const { data, error: sErr } = await supabase.storage.from('resumes').createSignedUrl(tgtPath, 60);
+        if (sErr) throw sErr;
+        
+        res.redirect(data.signedUrl);
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

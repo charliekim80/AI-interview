@@ -1,4 +1,3 @@
-```javascript
 const express = require('express');
 const router = express.Router();
 const { getSupabase } = require('../db/supabase');
@@ -23,27 +22,32 @@ async function getOpenAIKey() {
 
 async function parseResume(filename) {
     if (!filename) return '';
-    const fp = path.join(__dirname, '../uploads', filename);
+    console.log(`[AI] 이력서 파싱 시작 (Cloud): ${filename}`);
 
-    if (!fs.existsSync(fp)) {
-        console.error(`[AI] 이력서 파일 없음: ${fp}`);
-        return '';
-    }
-    console.log(`[AI] 이력서 파싱 시작: ${filename}`);
-
-    const ext = path.extname(filename).toLowerCase();
     try {
+        const { getSupabase } = require('../db/supabase');
+        const supabase = await getSupabase();
+        
+        // Supabase Storage에서 파일 다운로드
+        const { data: fileData, error } = await supabase.storage.from('resumes').download(filename);
+        
+        if (error || !fileData) {
+            console.error(`[AI] 이력서 다운로드 실패: ${filename}`, error?.message);
+            return '';
+        }
+
+        const buffer = Buffer.from(await fileData.arrayBuffer());
+        const ext = path.extname(filename).toLowerCase();
+
         if (ext === '.pdf') {
-            const dataBuffer = fs.readFileSync(fp);
-            const data = await pdfParse(dataBuffer, { max: 10 }); // 최대 10페이지까지 확장
+            const data = await pdfParse(buffer, { max: 10 });
             let text = data.text.trim();
-            // 불필요한 공백 및 제어문자 정제
             text = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, ''); 
             text = text.replace(/\s+/g, ' ').slice(0, 20000); 
             console.log(`[AI] PDF 파싱 완료: ${text.length}자`);
             return text;
         } else if (ext === '.docx' || ext === '.doc') {
-            const result = await mammoth.extractRawText({ path: fp });
+            const result = await mammoth.extractRawText({ buffer: buffer });
             let text = result.value.trim().slice(0, 20000);
             console.log(`[AI] DOCX 파싱 완료: ${text.length}자`);
             return text;
@@ -51,10 +55,9 @@ async function parseResume(filename) {
             console.warn(`[AI] 지원하지 않는 확장자: ${ext}`);
         }
     } catch (e) {
-        console.error('[AI] 이력서 파싱 실패, Fallback 진행:', e.message);
+        console.error('[AI] 이력서 파싱 실패:', e.message);
     }
     
-    // 최종적으로 텍스트가 너무 짧으면 로그만 남기고 빈 값 반환 (LLM이 나중에 '이력서 없음' 문구로 처리하도록)
     return '';
 }
 
@@ -242,11 +245,13 @@ async function analyzeAnswers(candidate, job, questions, answers) {
             strengths: ['성실한 답변 태도', '직무 관련 경험 보유'],
             improvements: ['더 구체적인 사례 제시 권장'],
             recommendation: 'Review',
-            answerAnalysis: questions.map((q, i) => ({
-                question: typeof q === 'string' ? q : q.text,
-                answer: answers[i]?.answer || '',
+            answerAnalysis: answers.map((a, i) => ({
+                question: a.question || (typeof questions[a.questionIndex] === 'string' ? questions[a.questionIndex] : questions[a.questionIndex]?.text) || '질문 없음',
+                answer: a.answer || '',
                 score: Math.floor(Math.random() * 20) + 68,
-                feedback: '답변이 접수되었습니다.'
+                feedback: '답변이 접수되었습니다.',
+                isFollowUp: a.isFollowUp || false,
+                parentQuestion: a.isFollowUp ? (answers.find(prev => !prev.isFollowUp && prev.questionIndex === a.questionIndex)?.question || null) : null
             }))
         };
     }
@@ -254,9 +259,9 @@ async function analyzeAnswers(candidate, job, questions, answers) {
     const { OpenAI } = require('openai');
     const openai = new OpenAI({ apiKey });
 
-    const qaText = questions.map((q, i) => {
-        const qText = typeof q === 'string' ? q : q.text;
-        return `Q${i + 1}: ${qText}\nA${i + 1}: ${answers[i]?.answer || '(답변 없음)'}`;
+    const qaText = answers.map((a, i) => {
+        const qText = a.question || (typeof questions[a.questionIndex] === 'string' ? questions[a.questionIndex] : questions[a.questionIndex]?.text) || '질문 없음';
+        return `Q${i + 1}: ${qText}\nA${i + 1}: ${a.answer || '(답변 없음)'}`;
     }).join('\n\n');
 
     const prompt = `당신은 HR 전문가입니다. 아래 면접 내용을 분석·평가하세요.
@@ -273,8 +278,18 @@ ${qaText}
   "strengths": ["강점1","강점2","강점3"],
   "improvements": ["개선점1","개선점2"],
   "recommendation": "Highly Recommended / Recommended / Review / Not Recommended",
-  "answerAnalysis": [{"question":"","answer":"","score":0~100,"feedback":""}]
+  "answerAnalysis": [{"question":"","answer":"","score":0~100,"feedback":"","isFollowUp":true|false}]
 }`;
+
+    // answers 배열에서 isFollowUp 정보 추출 (AI 분석 결과에 병합 예정)
+    const followUpMap = {};
+    answers.forEach((a) => {
+        if (a.isFollowUp) {
+            const parentQ = answers.find(prev => !prev.isFollowUp && prev.questionIndex === a.questionIndex);
+            followUpMap[a.question] = parentQ?.question || null;
+        }
+    });
+    const answerIsFollowUp = answers.map(a => a.isFollowUp || false);
 
     try {
         const completion = await openai.chat.completions.create({
@@ -286,7 +301,19 @@ ${qaText}
         const content = completion.choices[0].message.content.trim();
         const m = content.match(/\{[\s\S]*\}/);
         if (!m) throw new Error('파싱 실패');
-        return JSON.parse(m[0]);
+        const parsed = JSON.parse(m[0]);
+        
+        // isFollowUp 및 parentQuestion 필드를 answers 배열 기준으로 병합
+        if (parsed.answerAnalysis && Array.isArray(parsed.answerAnalysis)) {
+            parsed.answerAnalysis = parsed.answerAnalysis.map((item, i) => ({
+                ...item,
+                question: answers[i]?.question || item.question,  // 원문 질문 우선 사용
+                answer: answers[i]?.answer || item.answer,
+                isFollowUp: answerIsFollowUp[i] || false,
+                parentQuestion: answerIsFollowUp[i] ? (followUpMap[answers[i]?.question] || null) : null
+            }));
+        }
+        return parsed;
     } catch (e) {
         return {
             overallScore: 70,
