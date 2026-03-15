@@ -352,13 +352,13 @@ export default function Dashboard({ onNavigate }) {
                                             )}
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="flex items-center justify-end gap-3 min-w-[200px]">
+                                            <div className="flex items-center justify-end gap-3 min-w-[240px]">
                                                 {/* 결과 뷰어 or 진행중 상태 텍스트 */}
                                                 <div className="flex-1">
                                                     {c.status === 'Completed' ? (
                                                         <button
                                                             onClick={() => handleViewResult(c)}
-                                                            className="flex items-center justify-center gap-1.5 w-full text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-600 hover:text-white border border-indigo-100 px-3 py-2 rounded-lg transition-colors shadow-sm"
+                                                            className="flex items-center justify-center gap-1.5 w-full text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-600 hover:text-white border border-indigo-100 px-3 py-2 rounded-lg transition-colors shadow-sm whitespace-nowrap"
                                                         >
                                                             <Eye className="w-3.5 h-3.5" /> 결과 뷰어
                                                         </button>
