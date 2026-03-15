@@ -261,25 +261,41 @@ async function analyzeAnswers(candidate, job, questions, answers) {
 
     const qaText = answers.map((a, i) => {
         const qText = a.question || (typeof questions[a.questionIndex] === 'string' ? questions[a.questionIndex] : questions[a.questionIndex]?.text) || '질문 없음';
-        return `Q${i + 1}: ${qText}\nA${i + 1}: ${a.answer || '(답변 없음)'}`;
+        const qType = a.isFollowUp ? '[심층질문]' : '[일반질문]';
+        return `${qType} Q${i + 1}: ${qText}\nA${i + 1}: ${a.answer || '(답변 없음)'}`;
     }).join('\n\n');
 
-    const prompt = `당신은 HR 전문가입니다. 아래 면접 내용을 분석·평가하세요.
+    const prompt = `당신은 대한민국 최고의 HR 전문 분석가입니다. 아래 면접 내용을 정밀 분석하여 리포트를 작성하세요.
 
+[분석 지침]
+1. **STT 답변 정제(Denoising)**: 지원자의 답변(A) 중 음성 인식(STT) 오류나 습관으로 인해 발생하는 의미 없는 단어 반복(ex: "저는 저는...", "하고 하고...")을 자연스럽게 제거하세요. 단, 답변의 핵심 의도와 원문 내용은 훼손하지 말고 오직 가독성 개선을 위한 정제만 수행하여 결과 JSON의 "answer" 필드에 기록하세요.
+2. **정교한 1:1 매칭**: 나열된 질문(Q)과 답변(A)의 순서를 엄격히 준수하여 개별 분석을 수행하세요. 특히 [심층질문]의 경우 바로 앞선 일반 질문과의 맥락적 연결성을 고려하여 피드백을 작성하세요.
+3. **직무 적합성 평가**: ${job.title} 직무의 JD를 기준으로 지원자의 역량을 객관적으로 평가하세요.
+
+[입력 데이터]
 직무: ${job.title}
 지원자: ${candidate.name}
 
 ${qaText}
 
-다음 JSON으로 결과를 반환하세요:
+[반환 형식]
+반드시 아래 JSON 구조로만 응답하세요:
 {
   "overallScore": 0~100,
   "summary": "전반적 평가 2~3문장",
   "strengths": ["강점1","강점2","강점3"],
   "improvements": ["개선점1","개선점2"],
   "recommendation": "Highly Recommended / Recommended / Review / Not Recommended",
-  "answerAnalysis": [{"question":"","answer":"","score":0~100,"feedback":"","isFollowUp":true|false}]
-}`;
+  "answerAnalysis": [
+    {
+      "question": "제공된 원본 질문 텍스트",
+      "answer": "정제(Denoising)된 답변 텍스트",
+      "score": 0~100,
+      "feedback": "해당 문항에 대한 정교한 상세 피드백",
+      "isFollowUp": true|false
+    }
+  ]
+} (배열의 크기는 반드시 입력된 질문의 개수와 동일해야 함)`;
 
     // answers 배열에서 isFollowUp 정보 추출 (AI 분석 결과에 병합 예정)
     const followUpMap = {};
