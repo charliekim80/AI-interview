@@ -296,7 +296,7 @@ export default function Dashboard({ onNavigate }) {
                                 const sc = statusConfig[c.status] || statusConfig['Registered'];
                                 return (
                                     <tr key={c.id} className="hover:bg-blue-50/30 transition-colors group">
-                                        <td className="px-6 py-4 text-sm tracking-tight font-medium text-slate-500 whitespace-nowrap">
+                                        <td className="px-4 py-4 text-[13px] tracking-tight font-medium text-slate-500 w-[110px]">
                                             {formatDateTime(c.created_at)}
                                         </td>
                                         <td className="px-6 py-4 text-sm font-semibold text-slate-700 break-keep">
@@ -313,8 +313,8 @@ export default function Dashboard({ onNavigate }) {
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 min-w-[160px]">
-                                            <span className="text-[13px] font-bold text-slate-700 bg-slate-100 border border-slate-200 px-3 py-1 bg-opacity-80 rounded-lg whitespace-nowrap">
+                                        <td className="px-4 py-4 w-[130px] overflow-hidden">
+                                            <span className="text-[12px] font-bold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-1 bg-opacity-80 rounded-lg block truncate" title={c.job_title}>
                                                 {c.job_title || '—'}
                                             </span>
                                         </td>
