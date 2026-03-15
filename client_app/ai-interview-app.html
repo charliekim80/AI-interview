@@ -693,20 +693,24 @@
                         <div class="wave-bar" style="height:40px; animation-delay:0.4s;"></div>
                         <div class="wave-bar" style="height:26px; animation-delay:0.5s;"></div>
                     </div>
+                    <!-- 신규 문구 -->
+                    <p style="font-size:12px; color:#64748b; margin-top:16px; line-height:1.5; text-align:center; background:#f8fafc; padding:12px 16px; border-radius:12px;">
+                        💡 음성 인식 결과는 발음이나 주변 소음에 따라 실제와 차이가 발생 될 수 있으나, <br/><strong>면접결과에 영향을 주지 않습니다.</strong>
+                    </p>
+                    <div style="margin-top:10px; padding:6px 16px; background:#f1f5f9; border-radius:30px;">
+                        <span class="timer" id="timerDisplay" style="font-size:14px; font-weight:700; color:#334155;">0:00</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- Transcript -->
-            <div id="transcriptWrap">
+            <!-- Transcript (숨김 처리) -->
+            <div id="transcriptWrap" style="display: none;">
                 <p style="font-size:12px; color:#94a3b8; margin-bottom:6px;">📝 실시간 음성 인식 결과</p>
                 <div class="transcript-box" id="transcriptBox">
                     <span id="finalText"></span><span class="interim-text" id="interimText"></span>
                 </div>
-                <p style="font-size:11px; color:#64748b; margin-bottom:12px; line-height:1.4;">
-                    * 음성 인식 결과는 발음이나 주변 소음에 따라 실제와 다를 수 있으며, 면접관이 최종 검토 시 참고 자료로 활용됩니다.
-                </p>
                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span class="timer" id="timerDisplay">0:00</span>
+                    <span class="timer" style="display: none;">0:00</span>
                     <button onclick="clearTranscript()"
                         style="font-size:12px; color:#64748b; background:none; border:none; cursor:pointer;">지우기</button>
                 </div>
