@@ -313,8 +313,8 @@ export default function Dashboard({ onNavigate }) {
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 min-w-[140px]">
-                                            <span className="text-[13px] font-bold text-slate-700 bg-slate-100 border border-slate-200 px-3 py-1 bg-opacity-80 rounded-lg whitespace-nowrap">
+                                        <td className="px-6 py-4 min-w-[100px]">
+                                            <span className="text-[13px] font-bold text-slate-700 bg-slate-100 border border-slate-200 px-3 py-1 bg-opacity-80 rounded-lg inline-block">
                                                 {c.job_title || '—'}
                                             </span>
                                         </td>
