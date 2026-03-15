@@ -297,7 +297,7 @@ export default function Dashboard({ onNavigate }) {
                                 return (
                                     <tr key={c.id} className="hover:bg-blue-50/30 transition-colors group">
                                         <td className="px-6 py-4 text-sm tracking-tight font-medium text-slate-500 whitespace-nowrap">
-                                            {formatDate(c.created_at)}
+                                            {formatDateTime(c.created_at)}
                                         </td>
                                         <td className="px-6 py-4 text-sm font-semibold text-slate-700 break-keep">
                                             {c.department || '—'}
