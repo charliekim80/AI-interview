@@ -586,6 +586,9 @@
                         <polyline points="9 18 15 12 9 6" />
                     </svg>
                 </button>
+                <button class="btn btn-secondary" onclick="handleReject()" style="margin-top: 10px; background: rgba(71, 85, 105, 0.2); border: none;">
+                    인터뷰 거절하기
+                </button>
             </div>
             <p class="text-center text-muted" style="margin-top:14px;">이 플랫폼은 AI 기반 인터뷰 시스템입니다.</p>
         </div>
@@ -637,7 +640,7 @@
                     <div class="instruction-num">5</div>
                     <div class="instruction-content">
                         <h3>답변 시간</h3>
-                        <p>각 질문당 최대 <strong>5분</strong>의 시간이 주어집니다.</p>
+                        <p>각 질문당 최대 <strong>3분</strong>의 시간이 주어집니다.</p>
                     </div>
                 </div>
 
@@ -701,7 +704,7 @@
                         💡 음성 인식 결과는 발음이나 주변 소음에 따라 실제와 차이가 발생 될 수 있으나, <br/><strong style="color:#f8fafc; font-weight:600;">면접결과에는 영향을 주지 않습니다.</strong>
                     </p>
                     <div style="margin-top:10px; padding:6px 16px; background:#f1f5f9; border-radius:30px;">
-                        <span class="timer" id="timerDisplay" style="font-size:14px; font-weight:700; color:#334155;">0:00</span>
+                        <span class="timer" id="timerDisplay" style="font-size:14px; font-weight:700; color:#334155;">03:00</span>
                     </div>
                 </div>
             </div>
@@ -713,7 +716,7 @@
                     <span id="finalText"></span><span class="interim-text" id="interimText"></span>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span class="timer" style="display: none;">0:00</span>
+                    <span class="timer" style="display: none;">03:00</span>
                     <button onclick="clearTranscript()"
                         style="font-size:12px; color:#64748b; background:none; border:none; cursor:pointer;">지우기</button>
                 </div>
@@ -813,7 +816,7 @@
         let isRecording = false;
         let timerInterval = null;
         let timerSec = 0;
-        const MAX_SEC = 300;    // 5분 제한
+        const MAX_SEC = 180;    // 3분 제한으로 변경 (Phase 20)
         let wakeLock = null;
         let selectedRating = 0;
 
@@ -908,8 +911,58 @@
             showStep('step2');
         }
 
+        async function handleReject() {
+            if (!confirm("정말 인터뷰를 거절하시겠습니까?\n거절 시 추가 기회가 주어지지 않으며, 참여 의사 없음으로 제출됩니다.")) return;
+            
+            // 모든 질문에 대해 "인터뷰 거절" 텍스트 세팅 후 제출
+            answers = interviewData.questions.map((q, idx) => ({
+                questionIndex: idx,
+                question: typeof q === 'string' ? q : q.text,
+                answer: '인터뷰 거절',
+                isFollowUp: false
+            }));
+            
+            showStep('step4'); // 제출 중 화면
+            try {
+                const res = await fetch(`${API_BASE}/api/interviews/${interviewToken}/answers`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ answers })
+                });
+                if (!res.ok) throw new Error('제출 실패');
+                
+                // 설문 없이 바로 거절 완료 화면으로 이동
+                document.getElementById('step6').innerHTML = `
+                    <div class="success-icon" style="color: #64748b; margin-bottom: 20px;">
+                        <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="15" y1="9" x2="9" y2="15" />
+                            <line x1="9" y1="9" x2="15" y2="15" />
+                        </svg>
+                    </div>
+                    <h1 style="font-size:32px; font-weight:800; margin-bottom:10px;">인터뷰 거절이 완료되었습니다</h1>
+                    <p style="color:#94a3b8; font-size:16px; margin-bottom:32px;">지원자님의 소중한 시간을 절약하기 위해 입사 의사 없음으로 처리되었습니다.</p>
+                    <div class="card" style="text-align:left;">
+                        <div style="text-align:center; padding-top:10px;">
+                            <p style="color:#94a3b8; font-size:14px; font-weight:500;">채용담당자 <span style="color:#06b6d4;">gxhr@tecace.com</span></p>
+                            <p style="color:#64748b; font-size:12px; margin-top:8px;">이제 이 창을 닫으셔도 됩니다.</p>
+                        </div>
+                    </div>
+                `;
+                showStep('step6');
+            } catch (e) {
+                alert('처리 중 오류가 발생했습니다: ' + e.message);
+                showStep('step1');
+            }
+        }
+
         // ── Step 2 → 3: 첫 질문 ────────────────────────────────────
         function goToQuestion() {
+            // 즉각적인 In Progress 동기화를 위한 API 호출
+            try {
+                fetch(`${API_BASE}/api/interviews/${interviewToken}/start`, { method: 'POST' }).catch(e => console.error(e));
+            } catch (e) {}
+
             currentQIdx = 0;
             answers = [];
             renderQuestion();
@@ -1056,7 +1109,7 @@
                 updateTimerDisplay();
                 if (timerSec >= MAX_SEC) {
                     stopRecording();
-                    alert('최대 5분이 경과했습니다. 답변이 자동으로 저장됩니다.');
+                    alert('최대 3분이 경과하여 답변 채집이 자동으로 종료되었습니다.\n다음 질문으로 넘어가 주세요.');
                 }
             }, 1000);
         }
@@ -1103,13 +1156,18 @@
         }
 
         function updateTimerDisplay() {
-            const m = Math.floor(timerSec / 60);
-            const s = timerSec % 60;
-            document.getElementById('timerDisplay').textContent = `${m}:${s.toString().padStart(2, '0')}`;
+            const remain = Math.max(0, MAX_SEC - timerSec);
+            const m = Math.floor(remain / 60);
+            const s = remain % 60;
+            document.getElementById('timerDisplay').textContent = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
         }
 
         // ── 답변 완료 → 꼬리 질문 생성 or 다음 질문 or 제출 ─────────────────────────
         async function completeAnswer() {
+            if (!confirm("답변 제출 후 수정 할 수 없습니다.\n다음 질문으로 이동할까요?")) {
+                return;
+            }
+
             stopRecording();
 
             const answerText = finalTranscript.trim() ||
