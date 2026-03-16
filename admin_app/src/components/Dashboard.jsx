@@ -149,15 +149,21 @@ export default function Dashboard({ onNavigate }) {
         if (!dateString) return '—';
         try {
             const d = new Date(dateString);
-            return new Intl.DateTimeFormat('ko-KR', {
-                year: 'numeric',
+            const kstDate = new Intl.DateTimeFormat('ko-KR', {
+                year: '2-digit',
                 month: '2-digit',
                 day: '2-digit',
+                timeZone: 'Asia/Seoul'
+            }).format(d).replace(/\. /g, '-').replace(/\.$/, '');
+
+            const kstTime = new Intl.DateTimeFormat('ko-KR', {
                 hour: '2-digit',
                 minute: '2-digit',
                 hour12: false,
                 timeZone: 'Asia/Seoul'
-            }).format(d).replace(/\. /g, '.').replace(/\.$/, '');
+            }).format(d);
+
+            return `${kstDate}, ${kstTime}`;
         } catch (e) {
             return dateString;
         }
@@ -290,8 +296,8 @@ export default function Dashboard({ onNavigate }) {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-white border-b border-slate-200">
-                                {['등록일자 (KST)', '구분', '이름 및 연락처', '지원 직무', '상태', 'AI Score', '면접 링크', '액션'].map(h => (
-                                    <th key={h} className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider break-keep whitespace-nowrap">{h}</th>
+                                {['등록일자 (KST)', '구분', '이름 및 연락처', '지원 직무', '상태', 'AI Score', '면접 링크', '액션'].map((h, i) => (
+                                    <th key={h} className={`px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider break-keep whitespace-nowrap ${i === 0 || i === 1 ? 'min-w-[140px]' : i === 6 ? 'min-w-[160px]' : ''}`}>{h}</th>
                                 ))}
                             </tr>
                         </thead>
@@ -341,15 +347,24 @@ export default function Dashboard({ onNavigate }) {
                                                 <span className="text-slate-300 text-sm font-medium">—</span>
                                             )}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap min-w-[140px]">
+                                        <td className="px-6 py-4 whitespace-nowrap min-w-[160px]">
                                             {c.interview_token ? (
-                                                <button
-                                                    onClick={() => handleCopyLink(c)}
-                                                    className="flex items-center gap-2 text-xs font-bold text-blue-600 hover:text-white bg-blue-50 hover:bg-blue-600 px-3 py-2 rounded-lg transition-colors border border-blue-100 hover:border-blue-600"
-                                                >
-                                                    {copiedId === c.id ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                                                    {copiedId === c.id ? '복사 완료!' : '링크 복사'}
-                                                </button>
+                                                <div className="flex items-center gap-1">
+                                                    <button
+                                                        onClick={() => handleCopyLink(c)}
+                                                        className="flex items-center gap-2 text-xs font-bold text-blue-600 hover:text-white bg-blue-50 hover:bg-blue-600 px-3 py-2 rounded-lg transition-colors border border-blue-100 hover:border-blue-600 flex-1"
+                                                    >
+                                                        {copiedId === c.id ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                                                        {copiedId === c.id ? '복사 완료!' : '링크 복사'}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleExpireLink(c)}
+                                                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100"
+                                                        title="링크 만료"
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </button>
+                                                </div>
                                             ) : (
                                                 <button
                                                     onClick={() => onNavigate('candidates', c)}

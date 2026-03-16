@@ -177,6 +177,24 @@ router.get('/:token/result', async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// POST /api/interviews/:token/expire - 면접 링크 수동 만료 (Phase 18)
+router.post('/:token/expire', async (req, res) => {
+    try {
+        const supabase = await getSupabase();
+        const { data: row, error } = await supabase.from('interviews').select('*').eq('token', req.params.token).maybeSingle();
+        if (error) throw error;
+        if (!row) return res.status(404).json({ error: '면접 세션을 찾을 수 없습니다.' });
+
+        // 상태를 Expired로 변경
+        await supabase.from('interviews').update({ status: 'Expired' }).eq('token', req.params.token);
+        
+        // 지원자 상태를 Registered로 복구
+        await supabase.from('candidates').update({ status: 'Registered' }).eq('id', row.candidate_id);
+
+        res.json({ success: true, message: '면접 링크가 만료 처리되었습니다.' });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // POST /api/interviews/:token/reset - 면접 초기화 (재시작)
 router.post('/:token/reset', async (req, res) => {
     try {
