@@ -162,10 +162,10 @@ export default function Dashboard({ onNavigate }) {
     });
 
     const statCards = [
-        { label: '전체 지원자', value: stats.totalCandidates ?? 0, icon: Users, color: 'indigo' },
-        { label: '면접 완료', value: stats.completed ?? 0, icon: CheckCircle2, color: 'emerald' },
-        { label: '진행 중', value: stats.inProgress ?? 0, icon: PlayCircle, color: 'amber' },
-        { label: '평균 AI Score', value: stats.avgAiScore ? `${stats.avgAiScore}` : '-', icon: Award, color: 'blue' },
+        { label: '전체 지원자', value: stats.totalCandidates ?? 0, borderColor: 'border-l-indigo-500' },
+        { label: '면접 완료', value: stats.completed ?? 0, borderColor: 'border-l-emerald-500' },
+        { label: '진행 중', value: stats.inProgress ?? 0, borderColor: 'border-l-amber-500' },
+        { label: '평균 AI Score', value: stats.avgAiScore ? `${stats.avgAiScore}` : '-', borderColor: 'border-l-blue-500' },
     ];
 
 
@@ -174,15 +174,11 @@ export default function Dashboard({ onNavigate }) {
             {/* Stats */}
             <div className="grid grid-cols-4 gap-6">
                 {statCards.map((s, i) => {
-                    const Icon = s.icon;
                     return (
-                        <div key={i} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex items-center justify-between">
+                        <div key={i} className={`bg-white rounded-xl p-6 shadow-sm border border-slate-100 border-l-[6px] ${s.borderColor} flex items-center justify-between transition-transform hover:scale-[1.02]`}>
                             <div>
-                                <span className="text-sm font-bold text-slate-400 uppercase tracking-wider">{s.label}</span>
-                                <p className="text-3xl font-black text-slate-800 mt-2">{loading ? '—' : s.value}</p>
-                            </div>
-                            <div className={`w-14 h-14 rounded-2xl bg-${s.color}-500/10 flex items-center justify-center border border-${s.color}-500/20`}>
-                                <Icon className={`w-7 h-7 text-${s.color}-500 fill-${s.color}-500/20`} />
+                                <span className="text-[13px] font-bold text-slate-400 uppercase tracking-tight">{s.label}</span>
+                                <p className="text-3xl font-black text-slate-800 mt-1">{loading ? '—' : s.value}</p>
                             </div>
                         </div>
                     );

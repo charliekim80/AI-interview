@@ -268,9 +268,9 @@ async function analyzeAnswers(candidate, job, questions, answers) {
     const prompt = `당신은 대한민국 최고의 HR 전문 분석가입니다. 아래 면접 내용을 정밀 분석하여 리포트를 작성하세요.
 
 [분석 지침]
-1. **STT 답변 정제(Denoising)**: 지원자의 답변(A) 중 음성 인식(STT) 오류나 습관으로 인해 발생하는 의미 없는 단어 반복(ex: "저는 저는...", "하고 하고...")을 자연스럽게 제거하세요. 단, 답변의 핵심 의도와 원문 내용은 훼손하지 말고 오직 가독성 개선을 위한 정제만 수행하여 결과 JSON의 "answer" 필드에 기록하세요.
-2. **정교한 1:1 매칭**: 나열된 질문(Q)과 답변(A)의 순서를 엄격히 준수하여 개별 분석을 수행하세요. 특히 [심층질문]의 경우 바로 앞선 일반 질문과의 맥락적 연결성을 고려하여 피드백을 작성하세요.
-3. **직무 적합성 평가**: ${job.title} 직무의 JD를 기준으로 지원자의 역량을 객관적으로 평가하세요.
+2. **엄격한 1:1 매칭 (CRITICAL)**: 제공된 질문(Q1, Q2...)과 답변(A1, A2...)의 순서를 절대로 섞거나 누락하지 마세요. 결과 JSON의 \`answerAnalysis\` 배열 크기는 반드시 입력 답변 개수(${answers.length})와 정확히 일치해야 합니다.
+3. **질문 원문 유지**: \`answerAnalysis\` 내의 \`question\` 필드는 반드시 제공된 질문 텍스트를 글자 하나 틀리지 않고 그대로 유지하세요.
+4. **직무 적합성 평가**: ${job.title} 직무의 JD를 기준으로 지원자의 역량을 객관적으로 평가하세요.
 
 [입력 데이터]
 직무: ${job.title}
@@ -319,15 +319,30 @@ ${qaText}
         if (!m) throw new Error('파싱 실패');
         const parsed = JSON.parse(m[0]);
         
-        // isFollowUp 및 parentQuestion 필드를 answers 배열 기준으로 병합
+        // answers 배열에서 isFollowUp 정보 추출 및 1:1 매칭 보장
         if (parsed.answerAnalysis && Array.isArray(parsed.answerAnalysis)) {
-            parsed.answerAnalysis = parsed.answerAnalysis.map((item, i) => ({
-                ...item,
-                question: answers[i]?.question || item.question,  // 원문 질문 우선 사용
-                answer: answers[i]?.answer || item.answer,
-                isFollowUp: answerIsFollowUp[i] || false,
-                parentQuestion: answerIsFollowUp[i] ? (followUpMap[answers[i]?.question] || null) : null
-            }));
+            // AI가 누락했거나 더 많이 생성했을 경우를 대비해 answers 길이에 맞춤
+            const finalAnalysis = answers.map((ans, i) => {
+                const aiItem = parsed.answerAnalysis[i] || {};
+                const isFollowUp = ans.isFollowUp || false;
+                
+                // 해당 인덱스의 부모 질문 찾기 (심층 질문일 경우)
+                let parentQuestion = null;
+                if (isFollowUp) {
+                    const parentRow = answers.find((p, idx) => !p.isFollowUp && p.questionIndex === ans.questionIndex);
+                    parentQuestion = parentRow?.question || null;
+                }
+
+                return {
+                    question: ans.question, // 신뢰할 수 있는 원문 질문 사용
+                    answer: aiItem.answer || ans.answer || '(답변 없음)', // AI 정제본 우선, 없으면 원본
+                    score: aiItem.score || 0,
+                    feedback: aiItem.feedback || '분석 결과를 생성하지 못했습니다.',
+                    isFollowUp: isFollowUp,
+                    parentQuestion: parentQuestion
+                };
+            });
+            parsed.answerAnalysis = finalAnalysis;
         }
         return parsed;
     } catch (e) {
