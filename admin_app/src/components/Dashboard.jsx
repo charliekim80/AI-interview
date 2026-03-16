@@ -167,7 +167,7 @@ export default function Dashboard({ onNavigate }) {
                 month: '2-digit',
                 day: '2-digit',
                 timeZone: 'Asia/Seoul'
-            }).format(d).replace(/\. /g, '-').replace(/\.$/, '');
+            }).format(d).replace(/\. /g, '.').replace(/\.$/, '');
 
             const kstTime = new Intl.DateTimeFormat('ko-KR', {
                 hour: '2-digit',
@@ -176,7 +176,7 @@ export default function Dashboard({ onNavigate }) {
                 timeZone: 'Asia/Seoul'
             }).format(d);
 
-            return `${kstDate}, ${kstTime}`;
+            return `${kstDate} ${kstTime}`;
         } catch (e) {
             return dateString;
         }
@@ -309,9 +309,19 @@ export default function Dashboard({ onNavigate }) {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-white border-b border-slate-200">
-                                {['등록일자 (KST)', '구분', '이름 및 연락처', '지원 직무', '상태', 'AI Score', '면접 링크', '액션'].map((h, i) => (
-                                    <th key={h} className={`px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider break-keep whitespace-nowrap ${i === 0 || i === 1 ? 'min-w-[140px]' : i === 6 ? 'min-w-[160px]' : ''}`}>{h}</th>
-                                ))}
+                                {['등록일자 (KST)', '구분', '이름 및 연락처', '지원 직무', '상태', 'AI Score', '면접 링크', '액션'].map((h, i) => {
+                                    let widthClass = '';
+                                    if (i === 0) widthClass = 'max-w-[100px] w-[100px]'; // 등록일자
+                                    if (i === 1) widthClass = 'min-w-[140px]'; // 구분
+                                    if (i === 2) widthClass = 'max-w-[140px] w-[140px]'; // 이름 및 연락처
+                                    if (i === 3) widthClass = 'min-w-[140px]'; // 지원 직무
+                                    if (i === 4 || i === 5) widthClass = 'w-[50px] min-w-[50px]'; // 상태, score
+                                    if (i === 6) widthClass = 'min-w-[160px]'; // 링크
+                                    
+                                    return (
+                                        <th key={h} className={`px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider break-keep whitespace-nowrap ${widthClass}`}>{h}</th>
+                                    );
+                                })}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 bg-white relative">
@@ -372,7 +382,7 @@ export default function Dashboard({ onNavigate }) {
                                                     </button>
                                                     <button
                                                         onClick={() => handleExpireLink(c)}
-                                                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100"
+                                                        className="p-2 text-white hover:bg-red-700 bg-red-600 rounded-lg transition-colors shadow-sm"
                                                         title="링크 만료"
                                                     >
                                                         <X className="w-4 h-4" />

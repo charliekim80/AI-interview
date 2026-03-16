@@ -174,8 +174,7 @@ router.put('/:id', upload.array('resumes', 3), async (req, res) => {
             .update({
                 name, email, phone: phone || null, job_id: job_id || null,
                 department: department || '', resume_path: resumePath,
-                linkedin: linkedin || null, notes: notes || null,
-                updated_at: new Date()
+                linkedin: linkedin || null, notes: notes || null
             })
             .eq('id', id)
             .select('*, jobs(title)')
