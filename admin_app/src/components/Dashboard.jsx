@@ -147,8 +147,20 @@ export default function Dashboard({ onNavigate }) {
 
     const formatDateTime = (dateString) => {
         if (!dateString) return '—';
-        const d = new Date(dateString);
-        return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+        try {
+            const d = new Date(dateString);
+            return new Intl.DateTimeFormat('ko-KR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false,
+                timeZone: 'Asia/Seoul'
+            }).format(d).replace(/\. /g, '.').replace(/\.$/, '');
+        } catch (e) {
+            return dateString;
+        }
     };
 
     // Apply Filters
@@ -278,7 +290,7 @@ export default function Dashboard({ onNavigate }) {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-white border-b border-slate-200">
-                                {['등록일자', '구분', '이름 및 연락처', '지원 직무', '상태', 'AI Score', '면접 링크', '액션'].map(h => (
+                                {['등록일자 (KST)', '구분', '이름 및 연락처', '지원 직무', '상태', 'AI Score', '면접 링크', '액션'].map(h => (
                                     <th key={h} className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider break-keep whitespace-nowrap">{h}</th>
                                 ))}
                             </tr>

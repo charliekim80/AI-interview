@@ -150,7 +150,8 @@ export default function InterviewResultPanel({ initialCandidateId }) {
                 { wch: 10 }, { wch: 12 }, { wch: 55 }, { wch: 55 }, { wch: 75 }, { wch: 10 }
             ];
             XLSX.utils.book_append_sheet(wb, wsCombined, "면접 분석 결과");
-            const fileName = `${candidateInfo.name}_AI면접분석_${new Date().toISOString().split('T')[0]}.xlsx`;
+            const kstToday = new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'Asia/Seoul' }).format(new Date()).replace(/\. /g, '-').replace(/\.$/, '');
+            const fileName = `${candidateInfo.name}_AI면접분석_${kstToday}.xlsx`;
             XLSX.writeFile(wb, fileName);
             showToast('Excel 다운로드가 완료되었습니다.');
         } catch (e) {

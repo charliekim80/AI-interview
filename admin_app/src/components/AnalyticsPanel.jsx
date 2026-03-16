@@ -77,8 +77,20 @@ export default function AnalyticsPanel() {
 
     const formatDate = (dateString) => {
         if (!dateString) return '-';
-        const d = new Date(dateString);
-        return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+        try {
+            const d = new Date(dateString);
+            return new Intl.DateTimeFormat('ko-KR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false,
+                timeZone: 'Asia/Seoul'
+            }).format(d).replace(/\. /g, '.').replace(/\.$/, '');
+        } catch (e) {
+            return dateString;
+        }
     };
 
     return (
@@ -153,7 +165,7 @@ export default function AnalyticsPanel() {
                                     <th className="py-4 px-6 text-xs font-bold text-slate-500 uppercase tracking-wider w-[180px]">지원자 (직무)</th>
                                     <th className="py-4 px-6 text-xs font-bold text-slate-500 uppercase tracking-wider w-[120px]">평점</th>
                                     <th className="py-4 px-6 text-xs font-bold text-slate-500 uppercase tracking-wider">코멘트 (Comment)</th>
-                                    <th className="py-4 px-6 text-xs font-bold text-slate-500 uppercase tracking-wider w-[160px] text-right">응답 일시</th>
+                                    <th className="py-4 px-6 text-xs font-bold text-slate-500 uppercase tracking-wider w-[160px] text-right">응답 일시 (KST)</th>
                                     <th className="py-4 px-6 text-xs font-bold text-slate-500 uppercase tracking-wider w-[80px] text-center">관리</th>
                                 </tr>
                             </thead>
