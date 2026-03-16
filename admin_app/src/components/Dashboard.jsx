@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
     Users, CheckCircle2, PlayCircle, Search,
-    Plus, Copy, Check, Eye, Award, Trash2, Filter, FileText, ChevronDown, UserX, Clock
+    Plus, Copy, Check, Eye, Award, Trash2, Filter, FileText, ChevronDown, UserX, Clock, X
 } from 'lucide-react';
 import api from '../api/client';
 
@@ -73,6 +73,19 @@ export default function Dashboard({ onNavigate }) {
         await navigator.clipboard.writeText(link);
         setCopiedId(candidate.id);
         setTimeout(() => setCopiedId(null), 2000);
+    };
+
+    const handleExpireLink = async (candidate) => {
+        if (!candidate.interview_token) return;
+        if (!window.confirm(`${candidate.name}님의 면접 링크를 즉시 만료시키겠습니까?\n만료 후에는 지원자가 접속할 수 없으며 상태가 초기화됩니다.`)) return;
+
+        try {
+            await api.post(`/api/interviews/${candidate.interview_token}/expire`);
+            showToast('면접 링크가 만료되었습니다.');
+            fetchData();
+        } catch (e) {
+            showToast('만료 처리 실패: ' + e.message, 'error');
+        }
     };
 
     const handleViewResult = (candidate) => {
