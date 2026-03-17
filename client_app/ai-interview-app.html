@@ -1215,6 +1215,11 @@
             // 사용자가 마이크를 켜지 않았거나 너무 짧게 말하고 넘어가려 할 때 (인덱스 밀림 엇박자 방지)
             if (answerText.length < 2) {
                 if (!confirm("⚠️ 주의: 녹음된 답변이 없거나 너무 짧습니다!\n\n마이크가 켜져 있는지 확인하고 답변을 들려주세요.\n(이대로 빈 답변을 제출하고 다음 질문으로 넘어가시겠습니까?)")) {
+                    isProcessing = false;
+                    if(nextBtn) {
+                        nextBtn.disabled = false;
+                        nextBtn.textContent = (currentQIdx === interviewData.questions.length - 1) ? '면접 완료' : '다음 질문';
+                    }
                     return; // 사용자가 취소하면 넘어가지 않고 현재 질문에 머무름
                 }
             }
