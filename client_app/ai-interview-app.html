@@ -1066,10 +1066,8 @@
                     const t = event.results[i][0].transcript;
                     if (event.results[i].isFinal) {
                         const tTrim = t.trim();
-                        // 직전 확정 문장과 완전히 동일한 경우 반복 인식 버그로 간주하여 무시
-                        if (tTrim && tTrim !== lastFinalSnippet) {
+                        if (tTrim) {
                             finalTranscript += (finalTranscript.endsWith(' ') ? '' : ' ') + tTrim;
-                            lastFinalSnippet = tTrim;
                         }
                     } else {
                         interim = t;
@@ -1164,7 +1162,6 @@
             clearInterval(timerInterval);
             timerSec = 0;
             finalTranscript = '';
-            lastFinalSnippet = '';
             document.getElementById('micBtn').classList.remove('recording');
             document.getElementById('finalText').textContent = '';
             document.getElementById('interimText').textContent = '';
@@ -1211,23 +1208,17 @@
 
             stopRecording();
 
-            const answerText = finalTranscript.trim() ||
+            let answerText = finalTranscript.trim() ||
                 document.getElementById('finalText').textContent.trim() || '';
 
-            // ── 핵심 방어 로직: 빈 답변(스킵) 시도 시 경고 ─────────────────────────
-            // 사용자가 마이크를 켜지 않았거나 너무 짧게 말하고 넘어가려 할 때 (인덱스 밀림 엇박자 방지)
-            if (answerText.length < 2) {
-                if (!confirm("⚠️ 주의: 녹음된 답변이 없거나 너무 짧습니다!\n\n마이크가 켜져 있는지 확인하고 답변을 들려주세요.\n(이대로 빈 답변을 제출하고 다음 질문으로 넘어가시겠습니까?)")) {
-                    isProcessing = false;
-                    const nextBtn = document.getElementById('nextBtn');
-                    const nextBtnText = document.getElementById('nextBtnText');
-                    if(nextBtn && nextBtnText) {
-                        nextBtn.disabled = false;
-                        nextBtnText.textContent = (currentQIdx === interviewData.questions.length - 1) ? '면접 완료' : '다음 질문';
-                    }
-                    return; // 사용자가 취소하면 넘어가지 않고 현재 질문에 머무름
-                }
+            // ── Lossless Dictation: 화면에 떠있는 임시 텍스트도 버리지 않고 긁어모음 ──
+            const interimText = document.getElementById('interimText').textContent.trim();
+            if (interimText) {
+                answerText += (answerText.endsWith(' ') ? '' : ' ') + interimText;
             }
+
+            // 빈 답변(스킵) 시도 시 경고 창은 UI 꼬임 및 데이터 초기화 버그를 방지하고자 완전히 제거했습니다.
+            // 대신, 함수의 최상단 "다음 질문으로 이동할까요?" 첫 번째 확인창으로 일원화되었습니다.
 
             const rawQ = interviewData.questions[currentQIdx];
             const qText = typeof rawQ === 'string' ? rawQ : rawQ.text;
