@@ -201,7 +201,7 @@ export default function Dashboard({ onNavigate }) {
 
 
     return (
-        <div className="space-y-6 max-w-[1400px]">
+        <div className="space-y-6 w-full min-w-[1100px]">
             {/* Stats */}
             <div className="grid grid-cols-4 gap-6">
                 {statCards.map((s, i) => {
@@ -219,7 +219,7 @@ export default function Dashboard({ onNavigate }) {
             {/* Update List Board */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
                 <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                    <Clock className="w-5 h-5 text-slate-400" /> Update List Board
+                    <Clock className="w-5 h-5 text-slate-400" /> The Latest Updates
                 </h3>
                 <div className="max-h-64 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
                     {activities.length === 0 ? (
@@ -228,15 +228,15 @@ export default function Dashboard({ onNavigate }) {
                         </div>
                     ) : (
                         activities.map(act => (
-                            <div key={act.id} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100 hover:bg-slate-100 transition-colors">
-                                <span className={`flex-shrink-0 w-2.5 h-2.5 rounded-full shadow-sm ${act.type === 'created' ? 'bg-blue-500 shadow-blue-500/30' : 'bg-emerald-500 shadow-emerald-500/30'}`}></span>
-                                <div className="flex-1 min-w-0">
+                            <div key={act.id} className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-100 hover:bg-slate-100 transition-colors">
+                                <span className={`flex-shrink-0 w-2 h-2 rounded-full ${act.type === 'created' ? 'bg-blue-500' : 'bg-emerald-500'}`}></span>
+                                <div className="flex-1 flex items-center min-w-0 gap-2">
                                     <p className={`text-[13px] font-semibold truncate ${act.type === 'created' ? 'text-blue-700' : 'text-emerald-700'}`}>
                                         {act.message}
                                     </p>
-                                </div>
-                                <div className="text-[11px] text-slate-400 flex-shrink-0 whitespace-nowrap bg-white px-2 py-1 rounded-md border border-slate-200">
-                                    {formatDateTime(act.timestamp)}
+                                    <span className="text-[10px] text-slate-400 whitespace-nowrap bg-white px-2 py-0.5 rounded border border-slate-200">
+                                        {formatDateTime(act.timestamp)}
+                                    </span>
                                 </div>
                             </div>
                         ))
@@ -266,41 +266,51 @@ export default function Dashboard({ onNavigate }) {
                         </button>
                     </div>
 
-                    {/* Filters Row */}
-                    <div className="mt-6 flex flex-wrap gap-3 items-center bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
-                        <div className="flex items-center pl-3 text-slate-400">
-                            <Filter className="w-4 h-4" />
-                        </div>
-                        <div className="relative flex-1 min-w-[200px] border-r border-slate-100 pr-3">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                            <input type="text" placeholder="이름 또는 이메일 검색..." value={search} onChange={e => setSearch(e.target.value)}
-                                className="w-full pl-9 pr-4 py-2 bg-transparent text-sm focus:outline-none placeholder-slate-400" />
-                        </div>
-
-                        <div className="relative min-w-[140px] px-2 border-r border-slate-100">
-                            <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} className="w-full bg-transparent text-sm text-slate-700 font-medium focus:outline-none appearance-none cursor-pointer pr-6">
-                                <option value="">모든 구분</option>
-                                {uniqueCategories.map(c => <option key={c} value={c}>{c}</option>)}
-                            </select>
-                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                    {/* Separated Search and Filters area */}
+                    <div className="mt-6 space-y-3">
+                        {/* Search Bar */}
+                        <div className="relative bg-white p-1 rounded-xl border border-slate-200 shadow-sm">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                            <input
+                                type="text"
+                                placeholder="이름 또는 이메일로 검색하세요..."
+                                value={search}
+                                onChange={e => setSearch(e.target.value)}
+                                className="w-full pl-11 pr-4 py-2.5 bg-transparent text-sm focus:outline-none placeholder-slate-400"
+                            />
                         </div>
 
-                        <div className="relative min-w-[160px] px-2 border-r border-slate-100">
-                            <select value={filterJob} onChange={e => setFilterJob(e.target.value)} className="w-full bg-transparent text-sm text-slate-700 font-medium focus:outline-none appearance-none cursor-pointer pr-6">
-                                <option value="">모든 직무</option>
-                                {uniqueJobs.map(j => <option key={j} value={j}>{j}</option>)}
-                            </select>
-                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                        </div>
+                        {/* Filters Row */}
+                        <div className="flex flex-wrap gap-2">
+                            <div className="flex items-center px-4 bg-slate-100 rounded-xl border border-slate-200 text-slate-500 text-xs font-bold uppercase tracking-wider h-10">
+                                <Filter className="w-3.5 h-3.5 mr-2" /> Filters
+                            </div>
+                            
+                            <div className="relative min-w-[160px]">
+                                <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} className="w-full h-10 pl-4 pr-10 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 appearance-none cursor-pointer">
+                                    <option value="">모든 구분</option>
+                                    {uniqueCategories.map(c => <option key={c} value={c}>{c}</option>)}
+                                </select>
+                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                            </div>
 
-                        <div className="relative min-w-[130px] px-2">
-                            <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="w-full bg-transparent text-sm text-slate-700 font-medium focus:outline-none appearance-none cursor-pointer pr-6">
-                                <option value="">모든 상태</option>
-                                <option value="Invited">초대됨</option>
-                                <option value="In Progress">진행 중</option>
-                                <option value="Completed">완료</option>
-                            </select>
-                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                            <div className="relative min-w-[180px]">
+                                <select value={filterJob} onChange={e => setFilterJob(e.target.value)} className="w-full h-10 pl-4 pr-10 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 appearance-none cursor-pointer">
+                                    <option value="">모든 직무</option>
+                                    {uniqueJobs.map(j => <option key={j} value={j}>{j}</option>)}
+                                </select>
+                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                            </div>
+
+                            <div className="relative min-w-[140px]">
+                                <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="w-full h-10 pl-4 pr-10 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 appearance-none cursor-pointer">
+                                    <option value="">모든 상태</option>
+                                    <option value="Invited">초대됨</option>
+                                    <option value="In Progress">진행 중</option>
+                                    <option value="Completed">완료</option>
+                                </select>
+                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -311,15 +321,16 @@ export default function Dashboard({ onNavigate }) {
                             <tr className="bg-white border-b border-slate-200">
                                 {['등록일자 (KST)', '구분', '이름 및 연락처', '지원 직무', '상태', 'AI Score', '면접 링크', '액션'].map((h, i) => {
                                     let widthClass = '';
-                                    if (i === 0) widthClass = 'max-w-[100px] w-[100px]'; // 등록일자
-                                    if (i === 1) widthClass = 'min-w-[140px]'; // 구분
-                                    if (i === 2) widthClass = 'max-w-[140px] w-[140px]'; // 이름 및 연락처
-                                    if (i === 3) widthClass = 'min-w-[140px]'; // 지원 직무
-                                    if (i === 4 || i === 5) widthClass = 'w-[50px] min-w-[50px]'; // 상태, score
+                                    if (i === 0) widthClass = 'w-[100px] min-w-[100px] max-w-[100px]'; // 등록일자
+                                    if (i === 1) widthClass = 'min-w-[180px]'; // 구분 (+40px from 140)
+                                    if (i === 2) widthClass = 'w-[150px] min-w-[150px] max-w-[150px]'; // 이름 및 연락처 (Absolute 150)
+                                    if (i === 3) widthClass = 'min-w-[180px]'; // 지원 직무 (+40px from 140)
+                                    if (i === 4) widthClass = 'w-[40px] min-w-[40px]'; // 상태 (-10px from 50)
+                                    if (i === 5) widthClass = 'w-[40px] min-w-[40px]'; // AI Score (-10px from 50)
                                     if (i === 6) widthClass = 'min-w-[160px]'; // 링크
                                     
                                     return (
-                                        <th key={h} className={`px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider break-keep whitespace-nowrap ${widthClass}`}>{h}</th>
+                                        <th key={h} className={`px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider break-keep whitespace-nowrap text-center ${widthClass}`}>{h}</th>
                                     );
                                 })}
                             </tr>
@@ -339,14 +350,14 @@ export default function Dashboard({ onNavigate }) {
                                         <td className="px-6 py-4 text-sm font-semibold text-slate-700 break-keep">
                                             {c.department || '—'}
                                         </td>
-                                        <td className="px-6 py-4 min-w-[200px]">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-sm border border-slate-200 flex-shrink-0">
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs border border-slate-200 flex-shrink-0">
                                                     {c.name[0]}
                                                 </div>
-                                                <div>
-                                                    <span className="font-bold text-slate-800 text-[15px]">{c.name}</span>
-                                                    <p className="text-[13px] text-slate-500 leading-tight mt-0.5">{c.email}</p>
+                                                <div className="min-w-0">
+                                                    <span className="font-bold text-slate-800 text-sm truncate block">{c.name}</span>
+                                                    <p className="text-[11px] text-slate-400 truncate mt-0.5">{c.email}</p>
                                                 </div>
                                             </div>
                                         </td>
@@ -382,7 +393,7 @@ export default function Dashboard({ onNavigate }) {
                                                     </button>
                                                     <button
                                                         onClick={() => handleExpireLink(c)}
-                                                        className="p-2 text-white hover:bg-red-700 bg-red-600 rounded-lg transition-colors shadow-sm"
+                                                        className="p-2 text-red-400 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100"
                                                         title="링크 만료"
                                                     >
                                                         <X className="w-4 h-4" />

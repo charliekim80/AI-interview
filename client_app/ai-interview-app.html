@@ -761,12 +761,19 @@
                 </svg>
             </div>
             <h1 style="font-size:32px; font-weight:800; margin-bottom:10px;">면접 완료! 🎉</h1>
-            <p style="color:#94a3b8; font-size:16px; margin-bottom:32px;">답변이 성공적으로 제출되었습니다.</p>
+            <p style="color:#94a3b8; font-size:16px; margin-bottom:24px;">답변이 성공적으로 제출되었습니다.</p>
             
-            <div class="card">
-                <h3 style="font-size:18px; font-weight:700; margin-bottom:16px;">잠시만요! 👋</h3>
-                <p style="color:#cbd5e1; font-size:14px; margin-bottom:24px;">TecAce AI 면접은 어떠셨나요?<br>더 나은 경험을 위해 짧은 설문에 참여해 주세요.</p>
-                <button class="btn btn-primary" onclick="showStep('step6')">설문 참여하고 마치기</button>
+            <div class="card" style="border: 2px solid rgba(59, 130, 246, 0.2); background: rgba(59, 130, 246, 0.05);">
+                <h3 style="font-size:18px; font-weight:700; margin-bottom:12px;">잠시만요! 👋</h3>
+                <p style="color:#cbd5e1; font-size:14px; margin-bottom:16px;">TecAce AI 면접은 어떠셨나요?<br>더 나은 경험을 위해 짧은 설문에 참여해 주세요.</p>
+                
+                <div id="surveyAutoRedirect" style="margin-bottom: 20px; padding: 12px; background: rgba(59, 130, 246, 0.1); border-radius: 12px;">
+                    <p style="color: #60a5fa; font-size: 13px; font-weight: 600; margin: 0;">
+                        <span id="redirectCountdown" style="font-size: 16px; color: #3b82f6;">3</span>초 후 설문조사 화면으로 자동 이동합니다.
+                    </p>
+                </div>
+
+                <button class="btn btn-primary" onclick="showStep('step6')">지금 바로 설문 참여하기</button>
             </div>
         </div>
 
@@ -1077,6 +1084,28 @@
                 document.getElementById('interimText').textContent = interim;
             };
 
+            r.onstart = () => {
+                console.log('STT engine started');
+                isRecording = true;
+                document.getElementById('micBtn').classList.add('recording');
+                document.getElementById('micHintText').textContent = '🔴 녹음 중... (버튼을 눌러 중지)';
+                document.getElementById('waveBars').classList.remove('hidden');
+                document.getElementById('questionHint').textContent = '말씀하세요. 실시간으로 텍스트가 변환됩니다.';
+                
+                // 타이머 시작 (실제 인식 시작 시점부터)
+                timerSec = 0;
+                updateTimerDisplay();
+                clearInterval(timerInterval);
+                timerInterval = setInterval(() => {
+                    timerSec++;
+                    updateTimerDisplay();
+                    if (timerSec >= MAX_SEC) {
+                        stopRecording();
+                        alert('최대 3분이 경과하여 답변 채집이 자동으로 종료되었습니다.\n다음 질문으로 넘어가 주세요.');
+                    }
+                }, 1000);
+            };
+
             r.onerror = (e) => {
                 console.error('STT error:', e.error);
                 if (e.error === 'not-allowed') {
@@ -1117,31 +1146,16 @@
                 return;
             }
 
-            isRecording = true;
-            document.getElementById('micBtn').classList.add('recording');
-            document.getElementById('micHintText').textContent = '🔴 녹음 중... (버튼을 눌러 중지)';
-            document.getElementById('waveBars').classList.remove('hidden');
-            document.getElementById('questionHint').textContent = '말씀하세요. 실시간으로 텍스트가 변환됩니다.';
-
-            // 타이머
-            timerSec = 0;
-            updateTimerDisplay();
-            timerInterval = setInterval(() => {
-                timerSec++;
-                updateTimerDisplay();
-                if (timerSec >= MAX_SEC) {
-                    stopRecording();
-                    alert('최대 3분이 경과하여 답변 채집이 자동으로 종료되었습니다.\n다음 질문으로 넘어가 주세요.');
-                }
-            }, 1000);
+            document.getElementById('micHintText').textContent = '🎤 마이크 준비 중...';
+            document.getElementById('questionHint').textContent = '잠시만 기다려 주세요. 마이크가 곧 활성화됩니다.';
         }
 
         function stopRecording() {
             if (recognition) {
                 recognition.onend = null; // 자동 재시작 방지
-                // stop() 대신 abort()를 사용하여 보류 중인 잔여 음성 해석 및 onresult 이벤트를 강제 파괴 (Ghost 현상 차단)
-                try { recognition.abort(); } catch (e) { }
-                recognition = null;
+                // abort()는 음성을 버리므로 stop()을 호출하여 남아있는 음성을 처리하도록 함
+                try { recognition.stop(); } catch (e) { }
+                // recognition = null; // 여기서 null을 시키면 onresult가 마지막에 안올 수 있음
             }
             isRecording = false;
             clearInterval(timerInterval);
@@ -1155,7 +1169,7 @@
             if ('speechSynthesis' in window) window.speechSynthesis.cancel();
             if (recognition) { 
                 recognition.onend = null;
-                try { recognition.abort(); } catch (e) { } 
+                try { recognition.stop(); } catch (e) { } 
                 recognition = null; 
             }
             isRecording = false;
@@ -1207,6 +1221,9 @@
             }
 
             stopRecording();
+
+            // ── 마지막 발화 내용을 기다리기 위한 딜레이 (데이터 누락 방지 핵심) ──
+            await new Promise(resolve => setTimeout(resolve, 500));
 
             let answerText = finalTranscript.trim() ||
                 document.getElementById('finalText').textContent.trim() || '';
@@ -1285,6 +1302,21 @@
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || '제출 실패');
                 showStep('step5');
+
+                // ── 설문조사로 자동 이동 로직 ────────────────────────────────
+                let timeLeft = 3;
+                const countdownEl = document.getElementById('redirectCountdown');
+                const redirectTimer = setInterval(() => {
+                    timeLeft--;
+                    if(countdownEl) countdownEl.textContent = timeLeft;
+                    if(timeLeft <= 0) {
+                        clearInterval(redirectTimer);
+                        // 이미 다른 경로로 step6로 이동했거나 페이지를 닫은 경우를 제외하고 실행
+                        if (document.getElementById('step5').classList.contains('active')) {
+                            showStep('step6');
+                        }
+                    }
+                }, 1000);
             } catch (e) {
                 alert(`제출 중 오류가 발생했습니다: ${e.message}\n인터넷 연결을 확인하고 다시 시도하세요.`);
                 showStep('step3');
