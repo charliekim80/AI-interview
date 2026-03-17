@@ -30,6 +30,10 @@ export default function Dashboard({ onNavigate }) {
     const [uniqueCategories, setUniqueCategories] = useState([]);
     const [uniqueJobs, setUniqueJobs] = useState([]);
 
+    // Pagination
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
+
     useEffect(() => {
         fetchData();
     }, []);
@@ -192,6 +196,15 @@ export default function Dashboard({ onNavigate }) {
         return matchSearch && matchCat && matchJob && matchStatus;
     });
 
+    // Pagination Logic
+    const totalPages = Math.ceil(filtered.length / itemsPerPage);
+    const paginated = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [search, filterCategory, filterJob, filterStatus, itemsPerPage]);
+
     const statCards = [
         { label: '전체 지원자', value: stats.totalCandidates ?? 0, borderColor: 'border-l-indigo-500' },
         { label: '면접 완료', value: stats.completed ?? 0, borderColor: 'border-l-emerald-500' },
@@ -282,7 +295,16 @@ export default function Dashboard({ onNavigate }) {
 
                         {/* Filters Row */}
                         <div className="flex flex-wrap gap-2">
-                            <div className="flex items-center px-4 bg-slate-100 rounded-xl border border-slate-200 text-slate-500 text-xs font-bold uppercase tracking-wider h-10">
+                            <div className="relative min-w-[120px]">
+                                <select value={itemsPerPage} onChange={e => setItemsPerPage(Number(e.target.value))} className="w-full h-10 pl-4 pr-10 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/10 appearance-none cursor-pointer">
+                                    <option value="10">10개씩 보기</option>
+                                    <option value="20">20개씩 보기</option>
+                                    <option value="50">50개씩 보기</option>
+                                </select>
+                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                            </div>
+
+                            <div className="flex items-center px-4 bg-slate-50 rounded-xl border border-slate-200 text-slate-500 text-xs font-bold uppercase tracking-wider h-10">
                                 <Filter className="w-3.5 h-3.5 mr-2" /> Filters
                             </div>
                             
@@ -315,17 +337,17 @@ export default function Dashboard({ onNavigate }) {
                     </div>
                 </div>
 
-                <div className="overflow-x-auto min-h-[400px]">
+                <div className="overflow-x-auto min-h-[600px]">
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-white border-b border-slate-200">
                                 {['등록일자 (KST)', '구분', '이름 및 연락처', '지원 직무', '상태', 'AI Score', '면접 링크', '액션'].map((h, i) => {
                                     let widthClass = '';
                                     if (i === 0) widthClass = 'w-[100px] min-w-[100px] max-w-[100px]'; // 등록일자
-                                    if (i === 1) widthClass = 'min-w-[180px]'; // 구분 (+40px from 140)
-                                    if (i === 2) widthClass = 'w-[150px] min-w-[150px] max-w-[150px]'; // 이름 및 연락처 (Absolute 150)
-                                    if (i === 3) widthClass = 'min-w-[180px]'; // 지원 직무 (+40px from 140)
-                                    if (i === 4) widthClass = 'w-[40px] min-w-[40px]'; // 상태 (-10px from 50)
+                                    if (i === 1) widthClass = 'min-w-[180px]'; // 구분
+                                    if (i === 2) widthClass = 'w-[150px] min-w-[150px] max-w-[150px]'; // 이름 및 연락처
+                                    if (i === 3) widthClass = 'min-w-[200px] w-[200px] max-w-[200px]'; // 지원 직무 (Absolute 200px)
+                                    if (i === 4) widthClass = 'w-[40px] min-w-[40px]'; // 상태
                                     if (i === 5) widthClass = 'w-[40px] min-w-[40px]'; // AI Score (-10px from 50)
                                     if (i === 6) widthClass = 'min-w-[160px]'; // 링크
                                     
@@ -340,7 +362,7 @@ export default function Dashboard({ onNavigate }) {
                                 <tr><td colSpan={8} className="text-center py-20 text-slate-400">데이터를 불러오는 중입니다...</td></tr>
                             ) : filtered.length === 0 ? (
                                 <tr><td colSpan={8} className="text-center py-20 text-slate-400 bg-slate-50/50">조건에 맞는 지원자가 없습니다.</td></tr>
-                            ) : filtered.map(c => {
+                            ) : paginated.map(c => {
                                 const sc = statusConfig[c.status] || statusConfig['Registered'];
                                 return (
                                     <tr key={c.id} className="hover:bg-blue-50/30 transition-colors group">
@@ -361,7 +383,7 @@ export default function Dashboard({ onNavigate }) {
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 min-w-[100px]">
+                                        <td className="px-6 py-4 min-w-[200px] w-[200px] max-w-[200px]">
                                             <span className="text-[13px] font-bold text-slate-700 bg-slate-100 border border-slate-200 px-3 py-1 bg-opacity-80 rounded-lg inline-block">
                                                 {c.job_title || '—'}
                                             </span>
@@ -386,14 +408,14 @@ export default function Dashboard({ onNavigate }) {
                                                 <div className="flex items-center gap-1">
                                                     <button
                                                         onClick={() => handleCopyLink(c)}
-                                                        className="flex items-center gap-2 text-xs font-bold text-blue-600 hover:text-white bg-blue-50 hover:bg-blue-600 px-3 py-2 rounded-lg transition-colors border border-blue-100 hover:border-blue-600 flex-1"
+                                                        className="flex items-center justify-center gap-2 text-xs font-bold text-blue-600 hover:text-white bg-blue-50 hover:bg-blue-600 px-3 py-2 rounded-lg transition-colors border border-blue-100 hover:border-blue-600 flex-1"
                                                     >
                                                         {copiedId === c.id ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                                                        {copiedId === c.id ? '복사 완료!' : '링크 복사'}
+                                                        <span>{copiedId === c.id ? '복사 완료!' : '링크 복사'}</span>
                                                     </button>
                                                     <button
                                                         onClick={() => handleExpireLink(c)}
-                                                        className="p-2 text-red-400 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100"
+                                                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100"
                                                         title="링크 만료"
                                                     >
                                                         <X className="w-4 h-4" />
@@ -461,6 +483,36 @@ export default function Dashboard({ onNavigate }) {
                         </tbody>
                     </table>
                 </div>
+
+                {/* Pagination Controls */}
+                {!loading && filtered.length > 0 && (
+                    <div className="p-4 border-t border-slate-100 bg-slate-50/30 flex items-center justify-between">
+                        <div className="text-xs font-bold text-slate-400">
+                            Total <span className="text-slate-600">{filtered.length}</span> candidates
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={currentPage === 1}
+                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${currentPage === 1 ? 'text-slate-300 bg-slate-50 cursor-not-allowed' : 'text-slate-600 bg-white border border-slate-200 hover:border-blue-500 hover:text-blue-600'}`}
+                            >
+                                Previous
+                            </button>
+                            <div className="flex items-center gap-1 px-4 text-xs font-black text-slate-700">
+                                <span>{currentPage}</span>
+                                <span className="text-slate-300 font-medium">/</span>
+                                <span className="text-slate-400 font-medium">{totalPages}</span>
+                            </div>
+                            <button
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                disabled={currentPage === totalPages}
+                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${currentPage === totalPages ? 'text-slate-300 bg-slate-50 cursor-not-allowed' : 'text-slate-600 bg-white border border-slate-200 hover:border-blue-500 hover:text-blue-600'}`}
+                            >
+                                Next
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
