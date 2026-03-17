@@ -240,7 +240,7 @@ async function analyzeAnswers(candidate, job, questions, answers) {
 
     if (!apiKey) {
         return {
-            overallScore: Math.floor(Math.random() * 20) + 72,
+            overallScore: answers.some(a => a.answer && a.answer !== '인터뷰 거절') ? 75 : 10,
             summary: '면접이 완료되었습니다. OpenAI API Key 설정 후 상세 분석을 받을 수 있습니다.',
             strengths: ['성실한 답변 태도', '직무 관련 경험 보유'],
             improvements: ['더 구체적인 사례 제시 권장'],
@@ -248,7 +248,7 @@ async function analyzeAnswers(candidate, job, questions, answers) {
             answerAnalysis: answers.map((a, i) => ({
                 question: a.question || (typeof questions[a.questionIndex] === 'string' ? questions[a.questionIndex] : questions[a.questionIndex]?.text) || '질문 없음',
                 answer: a.answer || '',
-                score: Math.floor(Math.random() * 20) + 68,
+                score: (a.answer && a.answer !== '인터뷰 거절') ? 70 : 10,
                 feedback: '답변이 접수되었습니다.',
                 isFollowUp: a.isFollowUp || false,
                 parentQuestion: a.isFollowUp ? (answers.find(prev => !prev.isFollowUp && prev.questionIndex === a.questionIndex)?.question || null) : null
@@ -268,10 +268,13 @@ async function analyzeAnswers(candidate, job, questions, answers) {
     const prompt = `당신은 대한민국 최고의 HR 전문 분석가입니다. 아래 면접 내용을 정밀 분석하여 리포트를 작성하세요.
 
 [분석 지침]
-1. **엄격한 1:1 ID 매칭 (CRITICAL)**: 각 질문에 부여된 'ID: q_n'을 반드시 확인하세요. 결과 JSON의 \`answerAnalysis\` 배열은 입력된 모든 질문의 \`id\`를 정확히 포함하여 반환해야 합니다.
-2. **빈 답변 절대 누락 금지**: '답변 없음', '인터뷰 거절', 의미 없는 소음 등 유효하지 않은 답변이더라도 해당 ID를 분석 결과에서 **절대 누락시키지 마세요**. 대신 점수(score)를 0~10점으로 낮게 부여하고 피드백에 사유를 명시하세요.
-3. **질문 원문 유지**: \`answerAnalysis\` 내의 \`question\` 필드는 반드시 제공된 질문 텍스트를 그대로 유지하세요.
-4. **직무 적합성 평가**: ${job.title} 직무의 JD를 기준으로 평가하세요.
+2. **점수 산정 기준 (STRICT)**: 
+   - 답변이 없거나 '인터뷰 거절'인 경우: **무조건 10점** 부여.
+   - 의미 있는 답변이 있는 경우: **최소 30점 ~ 최대 100점** 사이에서 평가.
+   - 종합 점수(\`overallScore\`)는 개별 답변 점수의 가중 평균을 바탕으로 산출하되, 답변이 하나라도 있으면 최소 30점 이상(모두 없으면 10점)이 되도록 논리적으로 구성하세요.
+3. **빈 답변 절대 누락 금지**: '답변 없음', '인터뷰 거절' 등 유효하지 않은 답변이더라도 해당 ID를 분석 결과에서 **절대 누락시키지 마세요**. 
+4. **질문 원문 유지**: \`answerAnalysis\` 내의 \`question\` 필드는 반드시 제공된 질문 텍스트를 그대로 유지하세요.
+5. **직무 적합성 평가**: ${job.title} 직무의 JD를 기준으로 평가하세요.
 
 [입력 데이터]
 직무: ${job.title}
@@ -324,11 +327,12 @@ ${qaText}
                     parentQuestion = parentRow?.question || null;
                 }
 
+                const hasAnswer = ans.answer && ans.answer !== '인터뷰 거절';
                 return {
                     question: ans.question, // 항상 신뢰도가 100%인 원본 데이터 우선
                     answer: ans.answer || '(답변 없음)', // AI 튜닝 제거, 원본 답변 그대로 유지 (데이터 유실 방지)
-                    score: aiItem.score || (ans.answer && ans.answer !== '인터뷰 거절' ? 50 : 0),
-                    feedback: aiItem.feedback || (ans.answer ? '분석 결과를 생성하지 못했습니다.' : '답변이 제공되지 않아 분석 대상에서 제외되었습니다.'),
+                    score: aiItem.score || (hasAnswer ? 30 : 10),
+                    feedback: aiItem.feedback || (hasAnswer ? '분석 결과를 생성하지 못했습니다.' : '답변이 제공되지 않아 10점으로 처리되었습니다.'),
                     isFollowUp: isFollowUp,
                     parentQuestion: parentQuestion
                 };
