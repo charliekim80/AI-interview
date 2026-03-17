@@ -1178,6 +1178,14 @@
             const answerText = finalTranscript.trim() ||
                 document.getElementById('finalText').textContent.trim() || '';
 
+            // ── 핵심 방어 로직: 빈 답변(스킵) 시도 시 경고 ─────────────────────────
+            // 사용자가 마이크를 켜지 않았거나 너무 짧게 말하고 넘어가려 할 때 (인덱스 밀림 엇박자 방지)
+            if (answerText.length < 2) {
+                if (!confirm("⚠️ 주의: 녹음된 답변이 없거나 너무 짧습니다!\n\n마이크가 켜져 있는지 확인하고 답변을 들려주세요.\n(이대로 빈 답변을 제출하고 다음 질문으로 넘어가시겠습니까?)")) {
+                    return; // 사용자가 취소하면 넘어가지 않고 현재 질문에 머무름
+                }
+            }
+
             const rawQ = interviewData.questions[currentQIdx];
             const qText = typeof rawQ === 'string' ? rawQ : rawQ.text;
             // 개별 질문의 use_followup 옵션 사용 (없으면 전체 설정 fallback)
@@ -1194,8 +1202,8 @@
 
             // 꼬리질문 로직: 개별 질문 옵션이 활성화된 경우만 수행
             if (!isFollowUp && currentQUseFollowup) {
-                // 관리자가 허용한 질문(currentQUseFollowup=true)에 한하여, 답변이 5글자 이상이면 심층질문 발동
-                if (answerText.length > 5) {
+                // 관리자가 허용한 질문(currentQUseFollowup=true)에 한하여, 의미 있는 최소한의 단어(2글자 이상)면 심층질문 발동
+                if (answerText.length >= 2) {
                     try {
                         document.getElementById('questionHint').textContent = 'AI가 심층 질문을 생성하고 있습니다... 잠시만 기다려주세요.';
                         const res = await fetch(`${API_BASE}/api/ai/follow-up`, {
