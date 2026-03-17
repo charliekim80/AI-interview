@@ -39,9 +39,19 @@ export default function InterviewResult({ candidate, resultData, onBack }) {
             ['문항 번호', '질문 내용', '지원자 답변', 'AI 평가 (피드백)', '부분 점수']
         ];
 
-        exportAnswers.forEach((a, index) => {
+        let exportQNumber = 0;
+        exportAnswers.forEach((a) => {
+            // isFollowUp이 아닐 때만 번호 증가
+            if (!a.isFollowUp) {
+                exportQNumber++;
+            }
+
+            const questionLabel = a.isFollowUp 
+                ? `↳ Q${exportQNumber} 꼬리질문` 
+                : `Q${exportQNumber}`;
+
             qnaData.push([
-                `Q${index + 1}`,
+                questionLabel,
                 a.question,
                 a.answer,
                 a.feedback,
@@ -144,41 +154,57 @@ export default function InterviewResult({ candidate, resultData, onBack }) {
             <div className="space-y-4 pt-4">
                 <h3 className="text-xl font-bold text-slate-800 px-2">질문별 상세 분석</h3>
                 <div className="grid gap-4">
-                    {answerAnalysis.map((a, i) => {
-                        // Q7 숨김 처리
-                        if (!includeQ7 && i === 6) return null;
+                    {(() => {
+                        let currentQuestionNumber = 0;
+                        return answerAnalysis.map((a, i) => {
+                            // Q7 숨김 처리 (연봉 문항은 원래 질문 리스트에서 7번째, index 6에 해당)
+                            // 주의: 꼬리질문이 배열에 추가되어 인덱스 6이 실제 연봉 문항이 아닐 수 있음.
+                            // 연봉 문항의 특수한 패턴을 찾는 것으로 보완 (이번 수정의 핵심은 아님)
+                            if (!includeQ7 && a.question.includes('기대하시는 처우')) return null;
 
-                        return (
-                            <div key={i} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                                <div className="bg-slate-50 border-b border-slate-100 p-5 flex items-start justify-between gap-4">
-                                    <div>
-                                        <span className="inline-block px-3 py-1 bg-white border border-slate-200 text-slate-600 font-bold text-xs rounded-lg mb-2 shadow-sm">
-                                            Question {i + 1}
-                                        </span>
-                                        <p className="font-semibold text-slate-800 text-lg">{a.question}</p>
-                                    </div>
-                                    <div className="bg-white px-4 py-2 border border-emerald-100 rounded-xl shadow-sm text-center min-w-[80px]">
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Score</p>
-                                        <p className="text-xl font-black text-emerald-600 leading-none">{a.score}</p>
-                                    </div>
-                                </div>
-                                <div className="p-5 grid grid-cols-2 gap-5">
-                                    <div>
-                                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">지원자 답변</p>
-                                        <div className="bg-slate-50 p-4 rounded-xl text-slate-700 text-sm leading-relaxed whitespace-pre-wrap border border-slate-100">
-                                            {a.answer || '답변 없음'}
+                            // isFollowUp이 false일 때만 메인 질문 번호 증가
+                            if (!a.isFollowUp) {
+                                currentQuestionNumber++;
+                            }
+
+                            return (
+                                <div key={i} className={`bg-white rounded-2xl shadow-sm border overflow-hidden ${a.isFollowUp ? 'ml-8 border-l-4 border-l-blue-400 border-slate-100' : 'border-slate-100'}`}>
+                                    <div className={`${a.isFollowUp ? 'bg-blue-50/30' : 'bg-slate-50'} border-b border-slate-100 p-5 flex items-start justify-between gap-4`}>
+                                        <div>
+                                            {a.isFollowUp ? (
+                                                <span className="inline-block px-3 py-1 bg-blue-100 text-blue-700 font-bold text-xs rounded-lg mb-2 shadow-sm">
+                                                    ↳ 심층 꼬리질문 (Q{currentQuestionNumber} 후속)
+                                                </span>
+                                            ) : (
+                                                <span className="inline-block px-3 py-1 bg-white border border-slate-200 text-slate-600 font-bold text-xs rounded-lg mb-2 shadow-sm">
+                                                    Question {currentQuestionNumber}
+                                                </span>
+                                            )}
+                                            <p className="font-semibold text-slate-800 text-lg">{a.question}</p>
+                                        </div>
+                                        <div className="bg-white px-4 py-2 border border-emerald-100 rounded-xl shadow-sm text-center min-w-[80px]">
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Score</p>
+                                            <p className="text-xl font-black text-emerald-600 leading-none">{a.score}</p>
                                         </div>
                                     </div>
-                                    <div>
-                                        <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-2">AI 피드백</p>
-                                        <div className="bg-emerald-50/50 p-4 rounded-xl text-emerald-800 text-sm leading-relaxed whitespace-pre-wrap border border-emerald-100">
-                                            {a.feedback}
+                                    <div className="p-5 grid grid-cols-2 gap-5">
+                                        <div>
+                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">지원자 답변</p>
+                                            <div className="bg-slate-50 p-4 rounded-xl text-slate-700 text-sm leading-relaxed whitespace-pre-wrap border border-slate-100">
+                                                {a.answer || '답변 없음'}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-2">AI 피드백</p>
+                                            <div className={`${a.isFollowUp ? 'bg-blue-50/50 border-blue-100 text-blue-800' : 'bg-emerald-50/50 border-emerald-100 text-emerald-800'} p-4 rounded-xl text-sm leading-relaxed whitespace-pre-wrap border`}>
+                                                {a.feedback}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        );
-                    })}
+                            );
+                        });
+                    })()}
                 </div>
             </div>
         </div>

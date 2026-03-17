@@ -999,6 +999,11 @@
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = 'ko-KR';
                 utterance.rate = 1.0;
+                
+                // 질문 읽기가 끝나면 자동으로 마이크 켜기 (엇박자 방지 UX)
+                utterance.onend = () => {
+                    startRecording();
+                };
 
                 const setVoiceAndSpeak = () => {
                     const voices = window.speechSynthesis.getVoices();
@@ -1189,8 +1194,8 @@
 
             // 꼬리질문 로직: 개별 질문 옵션이 활성화된 경우만 수행
             if (!isFollowUp && currentQUseFollowup) {
-                // 특정 시나리오 문항(2~7번)에서만 꼬리질문 시도 (비용/시간 최적화)
-                if (currentQIdx >= 1 && currentQIdx <= 6 && answerText.length > 5) {
+                // 관리자가 허용한 질문(currentQUseFollowup=true)에 한하여, 답변이 5글자 이상이면 심층질문 발동
+                if (answerText.length > 5) {
                     try {
                         document.getElementById('questionHint').textContent = 'AI가 심층 질문을 생성하고 있습니다... 잠시만 기다려주세요.';
                         const res = await fetch(`${API_BASE}/api/ai/follow-up`, {

@@ -210,9 +210,9 @@ LinkedIn: ${candidate.linkedin || '정보 없음'}
             }
         }
 
-        const finalQuestions = questions.map(q => ({
+        const finalQuestions = questions.map((q, idx) => ({
             text: q,
-            use_followup: false // 요청에 따라 기본값 OFF 설정
+            use_followup: (idx >= 1 && idx <= 4) // Q2~Q5만 기본 활성화, 나머지는 OFF
         }));
 
         res.json({ questions: finalQuestions, mode: 'ai' });
@@ -290,11 +290,8 @@ ${qaText}
   "answerAnalysis": [
     {
       "id": "q_0", // 데이터에 부여된 고유 ID
-      "question": "원본 질문 텍스트",
-      "answer": "정제된 답변 텍스트",
       "score": 0~100,
-      "feedback": "상세 피드백 (무의미할 경우 사유 명시)",
-      "isFollowUp": true|false
+      "feedback": "상세 피드백 (무의미할 경우 사유 명시)"
     }
   ]
 }`;
@@ -329,7 +326,7 @@ ${qaText}
 
                 return {
                     question: ans.question, // 항상 신뢰도가 100%인 원본 데이터 우선
-                    answer: aiItem.answer || ans.answer || '(답변 없음)',
+                    answer: ans.answer || '(답변 없음)', // AI 튜닝 제거, 원본 답변 그대로 유지 (데이터 유실 방지)
                     score: aiItem.score || (ans.answer && ans.answer !== '인터뷰 거절' ? 50 : 0),
                     feedback: aiItem.feedback || (ans.answer ? '분석 결과를 생성하지 못했습니다.' : '답변이 제공되지 않아 분석 대상에서 제외되었습니다.'),
                     isFollowUp: isFollowUp,
