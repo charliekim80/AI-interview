@@ -262,15 +262,16 @@ async function analyzeAnswers(candidate, job, questions, answers) {
     const qaText = answers.map((a, i) => {
         const qText = a.question || (typeof questions[a.questionIndex] === 'string' ? questions[a.questionIndex] : questions[a.questionIndex]?.text) || '질문 없음';
         const qType = a.isFollowUp ? '[심층질문]' : '[일반질문]';
-        return `${qType} Q${i + 1}: ${qText}\nA${i + 1}: ${a.answer || '(답변 없음)'}`;
+        return `ID: q_${i}\n${qType} Q: ${qText}\nA: ${a.answer || '(답변 없음)'}`;
     }).join('\n\n');
 
     const prompt = `당신은 대한민국 최고의 HR 전문 분석가입니다. 아래 면접 내용을 정밀 분석하여 리포트를 작성하세요.
 
 [분석 지침]
-2. **엄격한 1:1 매칭 (CRITICAL)**: 제공된 질문(Q1, Q2...)과 답변(A1, A2...)의 순서를 절대로 섞거나 누락하지 마세요. 결과 JSON의 \`answerAnalysis\` 배열 크기는 반드시 입력 답변 개수(${answers.length})와 정확히 일치해야 합니다.
-3. **질문 원문 유지**: \`answerAnalysis\` 내의 \`question\` 필드는 반드시 제공된 질문 텍스트를 글자 하나 틀리지 않고 그대로 유지하세요.
-4. **직무 적합성 평가**: ${job.title} 직무의 JD를 기준으로 지원자의 역량을 객관적으로 평가하세요.
+1. **엄격한 1:1 ID 매칭 (CRITICAL)**: 각 질문에 부여된 'ID: q_n'을 반드시 확인하세요. 결과 JSON의 \`answerAnalysis\` 배열은 입력된 모든 질문의 \`id\`를 정확히 포함하여 반환해야 합니다.
+2. **빈 답변 절대 누락 금지**: '답변 없음', '인터뷰 거절', 의미 없는 소음 등 유효하지 않은 답변이더라도 해당 ID를 분석 결과에서 **절대 누락시키지 마세요**. 대신 점수(score)를 0~10점으로 낮게 부여하고 피드백에 사유를 명시하세요.
+3. **질문 원문 유지**: \`answerAnalysis\` 내의 \`question\` 필드는 반드시 제공된 질문 텍스트를 그대로 유지하세요.
+4. **직무 적합성 평가**: ${job.title} 직무의 JD를 기준으로 평가하세요.
 
 [입력 데이터]
 직무: ${job.title}
@@ -288,24 +289,17 @@ ${qaText}
   "recommendation": "Highly Recommended / Recommended / Review / Not Recommended",
   "answerAnalysis": [
     {
-      "question": "제공된 원본 질문 텍스트",
-      "answer": "정제(Denoising)된 답변 텍스트",
+      "id": "q_0", // 데이터에 부여된 고유 ID
+      "question": "원본 질문 텍스트",
+      "answer": "정제된 답변 텍스트",
       "score": 0~100,
-      "feedback": "해당 문항에 대한 정교한 상세 피드백",
+      "feedback": "상세 피드백 (무의미할 경우 사유 명시)",
       "isFollowUp": true|false
     }
   ]
-} (배열의 크기는 반드시 입력된 질문의 개수와 동일해야 함)`;
+}`;
 
-    // answers 배열에서 isFollowUp 정보 추출 (AI 분석 결과에 병합 예정)
-    const followUpMap = {};
-    answers.forEach((a) => {
-        if (a.isFollowUp) {
-            const parentQ = answers.find(prev => !prev.isFollowUp && prev.questionIndex === a.questionIndex);
-            followUpMap[a.question] = parentQ?.question || null;
-        }
-    });
-    const answerIsFollowUp = answers.map(a => a.isFollowUp || false);
+    // Phase 21: 불필요한 isFollowUp 임시 배열 생성 코드 삭제 (ID 기반 직접 맵핑으로 전환)
 
     try {
         const completion = await openai.chat.completions.create({
@@ -319,14 +313,14 @@ ${qaText}
         if (!m) throw new Error('파싱 실패');
         const parsed = JSON.parse(m[0]);
         
-        // answers 배열에서 isFollowUp 정보 추출 및 1:1 매칭 보장
+        // Phase 21: ID 릴레이션 기반 1:1 정밀 병합
         if (parsed.answerAnalysis && Array.isArray(parsed.answerAnalysis)) {
-            // AI가 누락했거나 더 많이 생성했을 경우를 대비해 answers 길이에 맞춤
             const finalAnalysis = answers.map((ans, i) => {
-                const aiItem = parsed.answerAnalysis[i] || {};
+                const targetId = `q_${i}`;
+                // 배열 순서와 무관하게 고유 ID로 AI 분석 결과를 찾아냄 (Index Shifting 완벽 방어)
+                const aiItem = parsed.answerAnalysis.find(item => item.id === targetId) || {};
                 const isFollowUp = ans.isFollowUp || false;
                 
-                // 해당 인덱스의 부모 질문 찾기 (심층 질문일 경우)
                 let parentQuestion = null;
                 if (isFollowUp) {
                     const parentRow = answers.find((p, idx) => !p.isFollowUp && p.questionIndex === ans.questionIndex);
@@ -334,10 +328,10 @@ ${qaText}
                 }
 
                 return {
-                    question: ans.question, // 신뢰할 수 있는 원문 질문 사용
-                    answer: aiItem.answer || ans.answer || '(답변 없음)', // AI 정제본 우선, 없으면 원본
-                    score: aiItem.score || 0,
-                    feedback: aiItem.feedback || '분석 결과를 생성하지 못했습니다.',
+                    question: ans.question, // 항상 신뢰도가 100%인 원본 데이터 우선
+                    answer: aiItem.answer || ans.answer || '(답변 없음)',
+                    score: aiItem.score || (ans.answer && ans.answer !== '인터뷰 거절' ? 50 : 0),
+                    feedback: aiItem.feedback || (ans.answer ? '분석 결과를 생성하지 못했습니다.' : '답변이 제공되지 않아 분석 대상에서 제외되었습니다.'),
                     isFollowUp: isFollowUp,
                     parentQuestion: parentQuestion
                 };
