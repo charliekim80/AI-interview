@@ -984,9 +984,10 @@
             // 더블클릭 락 해제 및 버튼 UI 원상복구
             isProcessing = false;
             const nextBtn = document.getElementById('nextBtn');
-            if (nextBtn) {
+            const nextBtnText = document.getElementById('nextBtnText');
+            if (nextBtn && nextBtnText) {
                 nextBtn.disabled = false;
-                nextBtn.textContent = currentQIdx === tot - 1 ? '면접 완료' : '다음 질문';
+                nextBtnText.textContent = currentQIdx === tot - 1 ? '면접 완료' : '다음 질문';
             }
         }
 
@@ -1002,9 +1003,10 @@
             // 더블클릭 락 해제 및 버튼 UI 원상복구
             isProcessing = false;
             const nextBtn = document.getElementById('nextBtn');
-            if (nextBtn) {
+            const nextBtnText = document.getElementById('nextBtnText');
+            if (nextBtn && nextBtnText) {
                 nextBtn.disabled = false;
-                nextBtn.textContent = currentQIdx === interviewData.questions.length - 1 ? '면접 완료' : '다음 질문';
+                nextBtnText.textContent = currentQIdx === interviewData.questions.length - 1 ? '면접 완료' : '다음 질문';
             }
         }
 
@@ -1201,9 +1203,10 @@
 
             isProcessing = true;
             const nextBtn = document.getElementById('nextBtn');
-            if(nextBtn) {
+            const nextBtnText = document.getElementById('nextBtnText');
+            if(nextBtn && nextBtnText) {
                 nextBtn.disabled = true;
-                nextBtn.textContent = "처리 중...";
+                nextBtnText.textContent = "처리 중...";
             }
 
             stopRecording();
@@ -1216,9 +1219,11 @@
             if (answerText.length < 2) {
                 if (!confirm("⚠️ 주의: 녹음된 답변이 없거나 너무 짧습니다!\n\n마이크가 켜져 있는지 확인하고 답변을 들려주세요.\n(이대로 빈 답변을 제출하고 다음 질문으로 넘어가시겠습니까?)")) {
                     isProcessing = false;
-                    if(nextBtn) {
+                    const nextBtn = document.getElementById('nextBtn');
+                    const nextBtnText = document.getElementById('nextBtnText');
+                    if(nextBtn && nextBtnText) {
                         nextBtn.disabled = false;
-                        nextBtn.textContent = (currentQIdx === interviewData.questions.length - 1) ? '면접 완료' : '다음 질문';
+                        nextBtnText.textContent = (currentQIdx === interviewData.questions.length - 1) ? '면접 완료' : '다음 질문';
                     }
                     return; // 사용자가 취소하면 넘어가지 않고 현재 질문에 머무름
                 }
