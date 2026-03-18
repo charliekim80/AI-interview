@@ -170,6 +170,57 @@ export default function SettingsPanel() {
         finally { setSavingDept(false); }
     };
 
+    // 알림 수신자 추가
+    const handleAddNotifEmail = async () => {
+        const email = newNotifEmail.trim();
+        if (!email || !email.includes('@')) { showToast('유효한 이메일을 입력해주세요.', 'error'); return; }
+        if (notifEmails.includes(email)) { showToast('이미 등록된 이메일입니다.', 'error'); return; }
+        const updated = [...notifEmails, email];
+        try {
+            setSavingNotif(true);
+            await api.post('/api/settings', { key: 'notification_emails', value: JSON.stringify(updated) });
+            setNotifEmails(updated);
+            setNewNotifEmail('');
+            showToast('수신자가 추가되었습니다.');
+        } catch (e) { showToast(e.message, 'error'); }
+        finally { setSavingNotif(false); }
+    };
+
+    // 알림 수신자 삭제
+    const handleRemoveNotifEmail = async (email) => {
+        const updated = notifEmails.filter(e => e !== email);
+        try {
+            setSavingNotif(true);
+            await api.post('/api/settings', { key: 'notification_emails', value: JSON.stringify(updated) });
+            setNotifEmails(updated);
+            showToast('수신자가 삭제되었습니다.');
+        } catch (e) { showToast(e.message, 'error'); }
+        finally { setSavingNotif(false); }
+    };
+
+    // SMTP 설정 저장
+    const handleSaveMail = async (key, value, setHas) => {
+        if (!value.trim() || value.includes('•')) { showToast('유효한 값을 입력해주세요.', 'error'); return; }
+        try {
+            setSavingMail(true);
+            await api.post('/api/settings', { key, value: value.trim() });
+            setHas(true);
+            showToast('저장되었습니다.');
+        } catch (e) { showToast(e.message, 'error'); }
+        finally { setSavingMail(false); }
+    };
+
+    // SMTP 설정 삭제
+    const handleClearMail = async (key, setValue, setHas) => {
+        if (!window.confirm('이 설정을 삭제하시겠습니까?')) return;
+        try {
+            await api.post('/api/settings', { key, value: '' });
+            setValue('');
+            setHas(false);
+            showToast('삭제되었습니다.');
+        } catch (e) { showToast(e.message, 'error'); }
+    };
+
     return (
         <div className="max-w-2xl space-y-6">
             {toast && (

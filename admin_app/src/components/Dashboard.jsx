@@ -282,24 +282,24 @@ export default function Dashboard({ onNavigate }) {
             </div>
 
             {/* Update List Board */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-                <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                    <Clock className="w-5 h-5 text-slate-400" /> The Latest Updates
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
+                <h3 className="text-sm font-bold text-slate-600 mb-2 flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-slate-400" /> The Latest Updates
                 </h3>
-                <div className="max-h-64 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
+                <div className="max-h-40 overflow-y-auto pr-1 space-y-1 custom-scrollbar">
                     {activities.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-6 text-slate-400">
+                        <div className="flex flex-col items-center justify-center py-4 text-slate-400 text-sm">
                             {loading ? '활동 내역을 불러오는 중입니다...' : '최근 업데이트 이력이 없습니다.'}
                         </div>
                     ) : (
                         activities.map(act => (
-                            <div key={act.id} className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-100 hover:bg-slate-100 transition-colors">
-                                <span className={`flex-shrink-0 w-2 h-2 rounded-full ${act.type === 'created' ? 'bg-blue-500' : 'bg-emerald-500'}`}></span>
+                            <div key={act.id} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-100 hover:bg-slate-100 transition-colors">
+                                <span className={`flex-shrink-0 w-1.5 h-1.5 rounded-full ${act.type === 'created' ? 'bg-blue-500' : 'bg-emerald-500'}`}></span>
                                 <div className="flex-1 flex items-center min-w-0 gap-2">
-                                    <p className={`text-[13px] font-semibold truncate ${act.type === 'created' ? 'text-blue-700' : 'text-emerald-700'}`}>
+                                    <p className={`text-[12px] font-semibold truncate ${act.type === 'created' ? 'text-blue-700' : 'text-emerald-700'}`}>
                                         {act.message}
                                     </p>
-                                    <span className="text-[10px] text-slate-400 whitespace-nowrap bg-white px-2 py-0.5 rounded border border-slate-200">
+                                    <span className="text-[10px] text-slate-400 whitespace-nowrap bg-white px-1.5 py-0.5 rounded border border-slate-200 flex-shrink-0">
                                         {formatDateTime(act.timestamp)}
                                     </span>
                                 </div>
@@ -308,6 +308,7 @@ export default function Dashboard({ onNavigate }) {
                     )}
                 </div>
             </div>
+
 
             {/* Main Table Area */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
