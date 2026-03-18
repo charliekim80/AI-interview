@@ -1,10 +1,13 @@
 const nodemailer = require('nodemailer');
 const { getSupabase } = require('../db/supabase');
+const localDb = require('../db/database');
 
 /**
- * Supabase settings 테이블에서 값을 읽어오는 헬퍼
+ * settings 테이블에서 값 읽기 (Supabase → localDb fallback)
+ * settings.js의 GET 로직과 동일한 패턴 사용
  */
 async function getSetting(key) {
+    // 1. Supabase 우선 시도
     try {
         const supabase = await getSupabase();
         const { data, error } = await supabase
@@ -12,9 +15,16 @@ async function getSetting(key) {
             .select('value')
             .eq('key', key)
             .maybeSingle();
-        if (!error && data) return data.value || '';
+        if (!error && data && data.value) return data.value;
     } catch (e) {
-        // Supabase 미연결 시 조용히 실패
+        // Supabase 미연결 시 localDb로 fallback
+    }
+    // 2. 로컬 SQLite fallback
+    try {
+        const row = await localDb.get('SELECT value FROM settings WHERE key = ?', [key]);
+        if (row && row.value) return row.value;
+    } catch (e) {
+        // 무시
     }
     return '';
 }
