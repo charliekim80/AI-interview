@@ -204,7 +204,7 @@ export default function Dashboard({ onNavigate }) {
                 timeZone: 'Asia/Seoul'
             }).format(d);
 
-            return `${kstDate} ${kstTime}`;
+            return `${kstDate} ${kstTime} (KST)`;
         } catch (e) {
             return dateString;
         }
