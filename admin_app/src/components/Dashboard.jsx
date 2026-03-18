@@ -4,6 +4,7 @@ import {
     Plus, Copy, Check, Eye, Award, Trash2, Filter, FileText, ChevronDown, UserX, Clock, X
 } from 'lucide-react';
 import api from '../api/client';
+import InterviewResult from './InterviewResult';
 
 const statusConfig = {
     'Registered': { color: 'bg-slate-100 text-slate-600 border-slate-200', label: '등록됨' },
@@ -26,6 +27,11 @@ export default function Dashboard({ onNavigate }) {
 
     const [copiedId, setCopiedId] = useState(null);
     const [toast, setToast] = useState(null);
+
+    // Result Modal state
+    const [modalCandidate, setModalCandidate] = useState(null);
+    const [modalResultData, setModalResultData] = useState(null);
+    const [modalLoading, setModalLoading] = useState(false);
 
     const [uniqueCategories, setUniqueCategories] = useState([]);
     const [uniqueJobs, setUniqueJobs] = useState([]);
@@ -92,10 +98,28 @@ export default function Dashboard({ onNavigate }) {
         }
     };
 
-    const handleViewResult = (candidate) => {
-        // App.jsx의 신규 네비게이션 로직 사용
-        onNavigate('interview-result', candidate.id);
+    const handleViewResult = async (candidate) => {
+        // 모달로 결과 열기
+        try {
+            setModalLoading(true);
+            setModalCandidate(candidate);
+            setModalResultData(null);
+            const res = await api.get(`/api/interviews/${candidate.interview_token}/result`);
+            setModalResultData(res.data);
+        } catch (e) {
+            showToast('결과 조회 실패: ' + e.message, 'error');
+            setModalCandidate(null);
+        } finally {
+            setModalLoading(false);
+        }
     };
+
+    // ESC 키로 모달 닫기
+    useEffect(() => {
+        const handleKey = (e) => { if (e.key === 'Escape') { setModalCandidate(null); setModalResultData(null); } };
+        window.addEventListener('keydown', handleKey);
+        return () => window.removeEventListener('keydown', handleKey);
+    }, []);
 
     const handleResetInterview = async (candidate) => {
         if (!candidate.interview_token) {
@@ -214,7 +238,35 @@ export default function Dashboard({ onNavigate }) {
 
 
     return (
-        <div className="space-y-6 w-full min-w-[1100px]">
+        <div className="space-y-6 w-full">
+            {/* Result Modal */}
+            {modalCandidate && (
+                <div
+                    className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-start justify-center p-4 overflow-y-auto"
+                    onClick={(e) => { if (e.target === e.currentTarget) { setModalCandidate(null); setModalResultData(null); } }}
+                >
+                    <div className="bg-slate-50 rounded-2xl shadow-2xl w-full max-w-5xl mt-8 mb-8 relative">
+                        <button
+                            onClick={() => { setModalCandidate(null); setModalResultData(null); }}
+                            className="absolute top-4 right-4 z-10 p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded-xl transition-colors"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                        <div className="p-6 overflow-y-auto max-h-[90vh]">
+                            {modalLoading ? (
+                                <div className="flex items-center justify-center py-24 text-slate-400">결과를 불러오는 중입니다...</div>
+                            ) : (
+                                <InterviewResult
+                                    candidate={modalCandidate}
+                                    resultData={modalResultData}
+                                    onBack={() => { setModalCandidate(null); setModalResultData(null); }}
+                                />
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Stats */}
             <div className="grid grid-cols-4 gap-6">
                 {statCards.map((s, i) => {
@@ -343,14 +395,15 @@ export default function Dashboard({ onNavigate }) {
                             <tr className="bg-white border-b border-slate-200">
                                 {['등록일자 (KST)', '구분', '이름 및 연락처', '지원 직무', '상태', 'AI Score', '면접 링크', '액션'].map((h, i) => {
                                     let widthClass = '';
-                                    if (i === 0) widthClass = 'w-[100px] min-w-[100px] max-w-[100px]'; // 등록일자
-                                    if (i === 1) widthClass = 'min-w-[180px]'; // 구분
-                                    if (i === 2) widthClass = 'w-[150px] min-w-[150px] max-w-[150px]'; // 이름 및 연락처
-                                    if (i === 3) widthClass = 'min-w-[200px] w-[200px] max-w-[200px]'; // 지원 직무 (Absolute 200px)
-                                    if (i === 4) widthClass = 'w-[40px] min-w-[40px]'; // 상태
-                                    if (i === 5) widthClass = 'w-[40px] min-w-[40px]'; // AI Score (-10px from 50)
-                                    if (i === 6) widthClass = 'min-w-[160px]'; // 링크
-                                    
+                                    if (i === 0) widthClass = 'w-28 min-w-[112px]';          // 등록일자
+                                    if (i === 1) widthClass = 'min-w-[120px]';               // 구분
+                                    if (i === 2) widthClass = 'min-w-[160px]';               // 이름/연락처
+                                    if (i === 3) widthClass = 'min-w-[160px]';               // 지원 직무
+                                    if (i === 4) widthClass = 'w-24 min-w-[96px]';           // 상태
+                                    if (i === 5) widthClass = 'w-24 min-w-[96px]';           // AI Score
+                                    if (i === 6) widthClass = 'min-w-[150px]';               // 링크
+                                    // i===7 액션: 자동 확장
+
                                     return (
                                         <th key={h} className={`px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider break-keep whitespace-nowrap text-center ${widthClass}`}>{h}</th>
                                     );
@@ -431,7 +484,7 @@ export default function Dashboard({ onNavigate }) {
                                             )}
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="flex items-center justify-end gap-3 min-w-[240px]">
+                                            <div className="flex items-center justify-end gap-3 min-w-[220px]">
                                                 {/* 결과 뷰어 or 진행중 상태 텍스트 */}
                                                 <div className="flex-1">
                                                     {c.status === 'Completed' ? (

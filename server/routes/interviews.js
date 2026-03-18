@@ -3,6 +3,7 @@ const router = express.Router();
 const { getSupabase } = require('../db/supabase');
 const { v4: uuidv4 } = require('uuid');
 const { analyzeAnswers } = require('./ai');
+const { sendInterviewNotification } = require('../utils/mail');
 
 // POST /api/interviews - 면접 세션 생성
 router.post('/', async (req, res) => {
@@ -145,6 +146,16 @@ router.post('/:token/answers', async (req, res) => {
             await supabase.from('interviews').update({ ai_analysis: JSON.stringify(analysis) }).eq('token', req.params.token);
             await supabase.from('candidates').update({ ai_score: analysis.overallScore, status: 'Completed' }).eq('id', candidateInfo.id);
             console.log(`[AI] 분석 완료: ${candidateInfo.name} — Score: ${analysis.overallScore}`);
+
+            // 면접 완료 알림 이메일 발송 (비동기, 실패 시 무시)
+            sendInterviewNotification({
+                candidateName: candidateInfo.name,
+                candidateEmail: candidateInfo.email,
+                jobTitle: jobInfo.title,
+                aiScore: analysis.overallScore,
+                recommendation: analysis.recommendation,
+            }).catch(e => console.error('[Mail] 알림 오류:', e.message));
+
         } catch (e) {
             console.error('[AI] 분석 오류:', e.message);
             // 분석 실패 시에도 면접 상태는 Completed로 유지하되 지원자 상태를 Fail로 찍어 관리자 인지 유도

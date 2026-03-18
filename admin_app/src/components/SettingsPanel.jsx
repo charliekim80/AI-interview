@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { KeyRound, Save, Eye, EyeOff, CheckCircle2, AlertCircle, Info, Building2, Plus, X } from 'lucide-react';
+import { KeyRound, Save, Eye, EyeOff, CheckCircle2, AlertCircle, Info, Building2, Plus, X, Bell, Mail } from 'lucide-react';
 import api from '../api/client';
 
 export default function SettingsPanel() {
@@ -18,6 +18,19 @@ export default function SettingsPanel() {
     const [departments, setDepartments] = useState([]);
     const [newDept, setNewDept] = useState('');
     const [savingDept, setSavingDept] = useState(false);
+
+    // Notification email recipients
+    const [notifEmails, setNotifEmails] = useState([]);
+    const [newNotifEmail, setNewNotifEmail] = useState('');
+    const [savingNotif, setSavingNotif] = useState(false);
+
+    // SMTP settings (mail_user / mail_pass)
+    const [mailUser, setMailUser] = useState('');
+    const [mailPass, setMailPass] = useState('');
+    const [showMailPass, setShowMailPass] = useState(false);
+    const [hasMailUser, setHasMailUser] = useState(false);
+    const [hasMailPass, setHasMailPass] = useState(false);
+    const [savingMail, setSavingMail] = useState(false);
 
     const [toast, setToast] = useState(null);
 
@@ -45,10 +58,28 @@ export default function SettingsPanel() {
                 if (r.data.exists && r.data.value) {
                     setDepartments(JSON.parse(r.data.value));
                 } else {
-                    // Default departments
                     setDepartments(['Engineering', 'Product', 'Design', 'Data Science', 'Marketing', 'Sales', 'HR']);
                 }
             })
+            .catch(console.error);
+
+        // 알림 수신자 이메일 목록 로드
+        api.get('/api/settings/notification_emails')
+            .then(r => {
+                if (r.data.exists && r.data.value) {
+                    try { setNotifEmails(JSON.parse(r.data.value)); } catch (e) {}
+                } else {
+                    setNotifEmails(['charliekim@tecace.com']);
+                }
+            })
+            .catch(console.error);
+
+        // SMTP 설정 로드
+        api.get('/api/settings/mail_user')
+            .then(r => { if (r.data.exists) { setHasMailUser(true); setMailUser(r.data.value); } })
+            .catch(console.error);
+        api.get('/api/settings/mail_pass')
+            .then(r => { if (r.data.exists) { setHasMailPass(true); setMailPass(r.data.value); } })
             .catch(console.error);
     }, []);
 
@@ -336,6 +367,131 @@ export default function SettingsPanel() {
                         <p className="text-sm text-slate-400">등록된 분류가 없습니다. 새 분류를 추가해주세요.</p>
                     )}
                 </div>
+            </div>
+
+            {/* Notification Recipients Box */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 text-black">
+                <div className="flex items-center gap-4 mb-8">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+                        <Bell className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                        <h3 className="text-xl font-bold text-slate-800">알림 설정 (Notification)</h3>
+                        <p className="text-sm text-slate-500">면접 완료 시 결과를 받을 이메일 수신자 목록</p>
+                    </div>
+                </div>
+
+                <div className="flex gap-3 mb-6">
+                    <input
+                        type="email"
+                        value={newNotifEmail}
+                        onChange={e => setNewNotifEmail(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && handleAddNotifEmail()}
+                        placeholder="수신자 이메일 입력 (예: hr@company.com)"
+                        className="flex-1 px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all bg-white"
+                        disabled={savingNotif}
+                    />
+                    <button
+                        onClick={handleAddNotifEmail}
+                        disabled={savingNotif || !newNotifEmail.trim()}
+                        className="bg-emerald-600 text-white px-5 py-3 rounded-xl text-sm font-medium flex items-center gap-2 hover:-translate-y-0.5 transition-all shadow-sm disabled:opacity-50"
+                    >
+                        <Plus className="w-4 h-4" /> 추가
+                    </button>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                    {notifEmails.map(email => (
+                        <div key={email} className="flex items-center gap-2 bg-emerald-50 text-emerald-800 px-3 py-1.5 rounded-lg text-sm border border-emerald-200">
+                            <span>{email}</span>
+                            <button
+                                onClick={() => handleRemoveNotifEmail(email)}
+                                disabled={savingNotif}
+                                className="text-emerald-400 hover:text-red-500 hover:bg-red-50 p-1 rounded-md transition-colors"
+                            >
+                                <X className="w-3.5 h-3.5" />
+                            </button>
+                        </div>
+                    ))}
+                    {notifEmails.length === 0 && (
+                        <p className="text-sm text-slate-400">등록된 수신자가 없습니다. 이메일을 추가해주세요.</p>
+                    )}
+                </div>
+            </div>
+
+            {/* SMTP Settings Box */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 text-black">
+                <div className="flex items-center gap-4 mb-8">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                        <Mail className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                        <h3 className="text-xl font-bold text-slate-800">메일 서버 설정 (SMTP)</h3>
+                        <p className="text-sm text-slate-500">알림 이메일 발송에 사용할 Gmail 계정 설정</p>
+                    </div>
+                </div>
+
+                <div className="p-4 bg-amber-50 rounded-xl border border-amber-200 mb-6">
+                    <p className="text-sm font-semibold text-amber-700 mb-1">⚠️ Gmail 앱 비밀번호 필요</p>
+                    <p className="text-xs text-amber-600">일반 Gmail 비밀번호로는 동작하지 않습니다. Google 계정 보안 &gt; <strong>앱 비밀번호</strong>에서 발급받은 16자리 코드를 입력하세요.</p>
+                </div>
+
+                <div className="space-y-5">
+                    {/* MAIL_USER */}
+                    <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-1">발송 Gmail 주소 (MAIL_USER)</label>
+                        <p className="text-xs text-slate-500 mb-3">알림 이메일을 발송할 Gmail 계정 주소</p>
+                        <div className="flex gap-3">
+                            <input
+                                type="text"
+                                placeholder="example@gmail.com"
+                                value={mailUser}
+                                onChange={e => setMailUser(e.target.value)}
+                                className="flex-1 px-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20 font-mono"
+                            />
+                            <button onClick={() => handleSaveMail('mail_user', mailUser, setHasMailUser)} disabled={savingMail}
+                                className="px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-medium hover:bg-violet-700 transition">저장</button>
+                            {hasMailUser && (
+                                <button onClick={() => handleClearMail('mail_user', setMailUser, setHasMailUser)}
+                                    className="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm hover:bg-slate-50 transition">삭제</button>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* MAIL_PASS */}
+                    <div>
+                        <label className="block text-sm font-semibold text-slate-700 mb-1">앱 비밀번호 (MAIL_PASS)</label>
+                        <p className="text-xs text-slate-500 mb-3">Google 계정에서 발급받은 16자리 앱 비밀번호</p>
+                        <div className="flex gap-3">
+                            <div className="relative flex-1">
+                                <input
+                                    type={showMailPass ? 'text' : 'password'}
+                                    placeholder="xxxx xxxx xxxx xxxx"
+                                    value={mailPass}
+                                    onChange={e => setMailPass(e.target.value)}
+                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20 font-mono"
+                                />
+                                <button onClick={() => setShowMailPass(!showMailPass)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                                    {showMailPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                </button>
+                            </div>
+                            <button onClick={() => handleSaveMail('mail_pass', mailPass, setHasMailPass)} disabled={savingMail}
+                                className="px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-medium hover:bg-violet-700 transition">저장</button>
+                            {hasMailPass && (
+                                <button onClick={() => handleClearMail('mail_pass', setMailPass, setHasMailPass)}
+                                    className="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm hover:bg-slate-50 transition">삭제</button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {hasMailUser && hasMailPass && (
+                    <div className="mt-6 flex items-center gap-2 p-4 bg-emerald-50 rounded-xl border border-emerald-200">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                        <p className="text-sm font-semibold text-emerald-700">SMTP 설정 완료 — 면접 완료 시 자동으로 알림이 발송됩니다.</p>
+                    </div>
+                )}
             </div>
         </div>
     );
