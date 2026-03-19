@@ -17,6 +17,7 @@
     "nodemailer": "^8.0.2",
     "openai": "^4.29.2",
     "pdf-parse": "^2.4.5",
+    "resend": "^6.9.4",
     "sqlite3": "^5.1.7",
     "uuid": "^9.0.1"
   },

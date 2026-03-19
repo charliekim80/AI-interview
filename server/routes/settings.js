@@ -5,20 +5,20 @@ const localDb = require('../db/database');
 const { verifyMailConfig } = require('../utils/mail');
 
 router.post('/test-email', async (req, res) => {
-    const { mail_user, mail_pass } = req.body;
-    if (!mail_user || !mail_pass) {
-        return res.status(400).json({ error: 'Gmail 계정과 앱 비밀번호를 모두 입력해주세요.' });
+    const { resend_api_key, to_email } = req.body;
+    if (!resend_api_key) {
+        return res.status(400).json({ error: 'Resend API Key를 입력해주세요.' });
     }
 
     try {
-        await verifyMailConfig(mail_user, mail_pass);
-        res.json({ success: true, message: '연결 테스트 성공! 테스트 메일이 발송되었습니다.' });
+        const result = await verifyMailConfig(resend_api_key, to_email);
+        res.json({ success: true, message: '테스트 메일이 발송되었습니다! 수신함을 확인해 주세요.' });
     } catch (e) {
         console.error('[Settings] 메일 테스트 실패:', e.message);
         res.status(500).json({ 
             error: '메일 발송 실패', 
             details: e.message,
-            hint: 'Gmail 앱 비밀번호가 정확한지, 혹은 2단계 인증이 활성화되어 있는지 확인해 주세요.'
+            hint: 'Resend API Key가 정확한지 확인해 주세요. (re_로 시작)'
         });
     }
 });
@@ -44,7 +44,7 @@ router.get('/:key', async (req, res) => {
             }
         }
         
-        const sensitiveKeys = ['openai_api_key', 'supabase_key', 'github_token', 'render_api_key'];
+        const sensitiveKeys = ['openai_api_key', 'supabase_key', 'github_token', 'render_api_key', 'resend_api_key'];
         if (sensitiveKeys.includes(req.params.key) && val) {
             val = val.slice(0, 4) + '••••••••••••••••••••••••••••••••••••••••';
         }

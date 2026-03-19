@@ -24,13 +24,11 @@ export default function SettingsPanel() {
     const [newNotifEmail, setNewNotifEmail] = useState('');
     const [savingNotif, setSavingNotif] = useState(false);
 
-    // SMTP settings (mail_user / mail_pass)
-    const [mailUser, setMailUser] = useState('');
-    const [mailPass, setMailPass] = useState('');
-    const [showMailPass, setShowMailPass] = useState(false);
-    const [hasMailUser, setHasMailUser] = useState(false);
-    const [hasMailPass, setHasMailPass] = useState(false);
-    const [savingMail, setSavingMail] = useState(false);
+    // Resend API Key
+    const [resendKey, setResendKey] = useState('');
+    const [showResendKey, setShowResendKey] = useState(false);
+    const [hasResendKey, setHasResendKey] = useState(false);
+    const [savingResend, setSavingResend] = useState(false);
 
     const [toast, setToast] = useState(null);
 
@@ -74,12 +72,9 @@ export default function SettingsPanel() {
             })
             .catch(console.error);
 
-        // SMTP 설정 로드
-        api.get('/api/settings/mail_user')
-            .then(r => { if (r.data.exists) { setHasMailUser(true); setMailUser(r.data.value); } })
-            .catch(console.error);
-        api.get('/api/settings/mail_pass')
-            .then(r => { if (r.data.exists) { setHasMailPass(true); setMailPass(r.data.value); } })
+        // Resend API Key 로드
+        api.get('/api/settings/resend_api_key')
+            .then(r => { if (r.data.exists) { setHasResendKey(true); setResendKey(r.data.value); } })
             .catch(console.error);
     }, []);
 
@@ -198,49 +193,50 @@ export default function SettingsPanel() {
         finally { setSavingNotif(false); }
     };
 
-    // SMTP 설정 저장
-    const handleSaveMail = async (key, value, setHas) => {
-        if (!value.trim() || value.includes('•')) { showToast('유효한 값을 입력해주세요.', 'error'); return; }
+    // Resend API Key 저장
+    const handleSaveResend = async () => {
+        if (!resendKey.trim() || resendKey.includes('•')) { showToast('유효한 API Key를 입력해주세요.', 'error'); return; }
         try {
-            setSavingMail(true);
-            await api.post('/api/settings', { key, value: value.trim() });
-            setHas(true);
-            showToast('저장되었습니다.');
+            setSavingResend(true);
+            await api.post('/api/settings', { key: 'resend_api_key', value: resendKey.trim() });
+            setHasResendKey(true);
+            showToast('Resend API Key가 저장되었습니다.');
         } catch (e) { showToast(e.message, 'error'); }
-        finally { setSavingMail(false); }
+        finally { setSavingResend(false); }
     };
 
-    // SMTP 설정 삭제
-    const handleClearMail = async (key, setValue, setHas) => {
-        if (!window.confirm('이 설정을 삭제하시겠습니까?')) return;
+    // Resend API Key 삭제
+    const handleClearResend = async () => {
+        if (!window.confirm('Resend API Key를 삭제하시겠습니까?')) return;
         try {
-            await api.post('/api/settings', { key, value: '' });
-            setValue('');
-            setHas(false);
+            await api.post('/api/settings', { key: 'resend_api_key', value: '' });
+            setResendKey('');
+            setHasResendKey(false);
             showToast('삭제되었습니다.');
         } catch (e) { showToast(e.message, 'error'); }
     };
 
-    // SMTP 테스트 발송
-    const handleTestMail = async () => {
-        if (!mailUser.trim() || !mailPass.trim() || mailPass.includes('•')) {
-            showToast('계정 정보와 앱 비밀번호를 올바르게 입력(저장)한 후 테스트하세요.', 'error');
+    // Resend 테스트 발송
+    const handleTestResend = async () => {
+        if (!resendKey.trim() || resendKey.includes('•')) {
+            showToast('Resend API Key를 먼저 저장해주세요.', 'error');
             return;
         }
         try {
-            setSavingMail(true);
-            showToast('연결 테스트 중...', 'info');
+            setSavingResend(true);
+            showToast('테스트 발송 중...', 'info');
+            const toEmail = notifEmails.length > 0 ? notifEmails[0] : '';
             const res = await api.post('/api/settings/test-email', { 
-                mail_user: mailUser, 
-                mail_pass: mailPass 
+                resend_api_key: resendKey, 
+                to_email: toEmail 
             });
-            showToast(`${res.data.message || '테스트 성공!'} \n(Gmail의 '보낸 편지함'을 확인해 보세요)`);
+            showToast(res.data.message || '테스트 성공!');
         } catch (e) {
             const errMsg = e.response?.data?.details || e.message;
             const hint = e.response?.data?.hint || '';
             showToast(`${errMsg}\n${hint}`, 'error');
         } finally {
-            setSavingMail(false);
+            setSavingResend(false);
         }
     };
 
@@ -440,93 +436,79 @@ export default function SettingsPanel() {
                 </div>
             </div>
 
-            {/* SMTP Settings Box */}
+            {/* Resend API Key Box */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 text-black">
                 <div className="flex items-center gap-4 mb-8">
                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
                         <Mail className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                        <h3 className="text-xl font-bold text-slate-800">메일 서버 설정 (SMTP)</h3>
-                        <p className="text-sm text-slate-500">알림 이메일 발송에 사용할 Gmail 계정 설정</p>
+                        <h3 className="text-xl font-bold text-slate-800">메일 발송 설정 (Resend)</h3>
+                        <p className="text-sm text-slate-500">면접 완료 알림 이메일 발송에 사용할 Resend API 설정</p>
                     </div>
                 </div>
 
-                <div className="p-4 bg-amber-50 rounded-xl border border-amber-200 mb-6">
-                    <p className="text-sm font-semibold text-amber-700 mb-1">⚠️ Gmail 앱 비밀번호 필요</p>
-                    <p className="text-xs text-amber-600">Google 계정 보안 &gt; <strong>앱 비밀번호(16자리 코드) 입력</strong></p>
+                <div className="p-4 bg-blue-50 rounded-xl border border-blue-200 mb-6">
+                    <div className="flex items-start gap-3">
+                        <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                        <div className="text-sm text-blue-700">
+                            <p className="font-semibold mb-1">Resend API Key 발급 방법</p>
+                            <ul className="text-xs text-blue-600 space-y-0.5">
+                                <li>1. <a href="https://resend.com" target="_blank" rel="noopener noreferrer" className="underline font-bold">resend.com</a> 가입 (GitHub 로그인 가능)</li>
+                                <li>2. API Keys → Create API Key 클릭</li>
+                                <li>3. 생성된 <code className="bg-blue-100 px-1 rounded">re_xxxxx...</code> 형식의 Key를 아래에 붙여넣기</li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="space-y-5">
-                    {/* MAIL_USER */}
                     <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-1">발송 Gmail 주소 (MAIL_USER)</label>
-                        <p className="text-xs text-slate-500 mb-3">알림 이메일을 발송할 Gmail 계정 주소</p>
-                        <div className="flex gap-3">
-                            <input
-                                type="text"
-                                placeholder="example@gmail.com"
-                                value={mailUser}
-                                onChange={e => setMailUser(e.target.value)}
-                                className="flex-1 px-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20 font-mono"
-                            />
-                            <button onClick={() => handleSaveMail('mail_user', mailUser, setHasMailUser)} disabled={savingMail}
-                                className="px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-medium hover:bg-violet-700 transition">저장</button>
-                            {hasMailUser && (
-                                <button onClick={() => handleClearMail('mail_user', setMailUser, setHasMailUser)}
-                                    className="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm hover:bg-slate-50 transition">삭제</button>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* MAIL_PASS */}
-                    <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-1">앱 비밀번호 (MAIL_PASS)</label>
-                        <p className="text-xs text-slate-500 mb-3">Google 계정에서 발급받은 16자리 앱 비밀번호</p>
+                        <label className="block text-sm font-semibold text-slate-700 mb-1">Resend API Key</label>
+                        <p className="text-xs text-slate-500 mb-3">HTTP 기반 이메일 발송 서비스 (SMTP 포트 차단 환경에서도 동작)</p>
                         <div className="flex gap-3">
                             <div className="relative flex-1">
                                 <input
-                                    type={showMailPass ? 'text' : 'password'}
-                                    placeholder="xxxx xxxx xxxx xxxx"
-                                    value={mailPass}
-                                    onChange={e => setMailPass(e.target.value)}
+                                    type={showResendKey ? 'text' : 'password'}
+                                    placeholder="re_xxxxxxxxx..."
+                                    value={resendKey}
+                                    onChange={e => setResendKey(e.target.value)}
                                     className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/20 font-mono"
                                 />
-                                <button onClick={() => setShowMailPass(!showMailPass)}
+                                <button onClick={() => setShowResendKey(!showResendKey)}
                                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                                    {showMailPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    {showResendKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                 </button>
                             </div>
-                            <button onClick={() => handleSaveMail('mail_pass', mailPass, setHasMailPass)} disabled={savingMail}
+                            <button onClick={handleSaveResend} disabled={savingResend}
                                 className="px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-medium hover:bg-violet-700 transition">저장</button>
-                            {hasMailPass && (
-                                <button onClick={() => handleClearMail('mail_pass', setMailPass, setHasMailPass)}
+                            {hasResendKey && (
+                                <button onClick={handleClearResend}
                                     className="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm hover:bg-slate-50 transition">삭제</button>
                             )}
                         </div>
                     </div>
 
-                    {/* Test Connection Button */}
+                    {/* Test Send Button */}
                     <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
                         <div className="text-xs text-slate-400 leading-relaxed">
-                            <span className="text-amber-600 font-bold">● 중요:</span> 계정/비번 수정 후 반드시 <span className="text-slate-700 font-bold">먼저 '저장'</span>을 완료한 뒤,<br />
-                            테스트 버튼을 눌러 발송 여부를 확인하세요.
+                            API Key 저장 후 테스트 발송 버튼을 눌러 메일 수신을 확인하세요.
                         </div>
                         <button
-                            onClick={handleTestMail}
-                            disabled={savingMail || !mailUser.trim() || !mailPass.trim()}
+                            onClick={handleTestResend}
+                            disabled={savingResend || !resendKey.trim()}
                             className="px-6 py-2.5 bg-slate-800 text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-slate-900 transition-all shadow-md disabled:opacity-50"
                         >
                             <Send className="w-4 h-4" />
-                            {savingMail ? '테스트 중...' : '연결 테스트'}
+                            {savingResend ? '발송 중...' : '테스트 발송'}
                         </button>
                     </div>
                 </div>
 
-                {hasMailUser && hasMailPass && (
+                {hasResendKey && (
                     <div className="mt-6 flex items-center gap-2 p-4 bg-emerald-50 rounded-xl border border-emerald-200">
                         <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
-                        <p className="text-sm font-semibold text-emerald-700">SMTP 설정 완료 — 면접 완료 시 자동으로 알림이 발송됩니다.</p>
+                        <p className="text-sm font-semibold text-emerald-700">Resend 설정 완료 — 면접 완료 시 자동으로 알림이 발송됩니다.</p>
                     </div>
                 )}
             </div>
