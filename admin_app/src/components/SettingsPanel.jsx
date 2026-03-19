@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { KeyRound, Save, Eye, EyeOff, CheckCircle2, AlertCircle, Info, Building2, Plus, X, Bell, Mail } from 'lucide-react';
+import { KeyRound, Save, Eye, EyeOff, CheckCircle2, AlertCircle, Info, Building2, Plus, X, Bell, Mail, Send } from 'lucide-react';
 import api from '../api/client';
 
 export default function SettingsPanel() {
