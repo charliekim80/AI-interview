@@ -12,12 +12,11 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
-// 응답 에러 인터셉터
+// 응답 에러 인터셉터 - 원본 에러 그대로 전달 (response.data 보존)
 api.interceptors.response.use(
     (res) => res,
     (err) => {
-        const msg = err.response?.data?.error || err.message || '서버 오류';
-        return Promise.reject(new Error(msg));
+        return Promise.reject(err);
     }
 );
 
