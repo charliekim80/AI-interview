@@ -338,59 +338,6 @@ export default function SettingsPanel() {
                 </div>
             </div>
 
-            {/* Deployment & Infrastructure Box */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 text-black">
-                <div className="flex items-center gap-4 mb-8">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center">
-                        <Save className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                        <h3 className="text-xl font-bold text-slate-800">Deployment & Infrastructure</h3>
-                        <p className="text-sm text-slate-500">배포 서버 및 외부 데이터베이스(Supabase 등) 연동 설정</p>
-                    </div>
-                </div>
-
-                <div className="space-y-6">
-                    {[
-                        { id: 'supabase_url', label: 'Supabase URL', placeholder: 'https://xxx.supabase.co', desc: 'PostgreSQL DB 접속 도메인', secret: false },
-                        { id: 'supabase_key', label: 'Supabase API Key', placeholder: 'eyJ...', desc: 'DB 인증용 (anon 또는 service_role)', secret: true },
-                        { id: 'github_token', label: 'GitHub Token', placeholder: 'ghp_...', desc: 'Render.com 연동 및 소스코드 관리용', secret: true },
-                        { id: 'render_api_key', label: 'Render.com API Key', placeholder: 'rnd_...', desc: '무중단 배포 확인 및 트리거용', secret: true },
-                    ].map(item => (
-                        <div key={item.id} className="pt-4 border-t border-slate-100 first:pt-0 first:border-0">
-                            <label className="block text-sm font-semibold text-slate-700 mb-1">{item.label}</label>
-                            <p className="text-xs text-slate-500 mb-3">{item.desc}</p>
-                            <div className="flex gap-3">
-                                <div className="relative flex-1">
-                                    <input
-                                        type={item.secret && !showInfra[item.id] ? 'password' : 'text'}
-                                        placeholder={item.placeholder}
-                                        value={infraKeys[item.id]}
-                                        onChange={e => setInfraKeys(prev => ({ ...prev, [item.id]: e.target.value }))}
-                                        className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-mono"
-                                    />
-                                    {item.secret && (
-                                        <button onClick={() => setShowInfra(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                                            {showInfra[item.id] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                        </button>
-                                    )}
-                                </div>
-                                <button onClick={() => handleSaveInfra(item.id)} disabled={savingInfra}
-                                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition">
-                                    저장
-                                </button>
-                                {hasInfra[item.id] && (
-                                    <button onClick={() => handleClearInfra(item.id)}
-                                        className="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm hover:bg-slate-50 transition">
-                                        삭제
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
 
             {/* Department Settings Box */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 text-black">
@@ -507,7 +454,7 @@ export default function SettingsPanel() {
 
                 <div className="p-4 bg-amber-50 rounded-xl border border-amber-200 mb-6">
                     <p className="text-sm font-semibold text-amber-700 mb-1">⚠️ Gmail 앱 비밀번호 필요</p>
-                    <p className="text-xs text-amber-600">일반 Gmail 비밀번호로는 동작하지 않습니다. Google 계정 보안 &gt; <strong>앱 비밀번호</strong>에서 발급받은 16자리 코드를 입력하세요.</p>
+                    <p className="text-xs text-amber-600">Google 계정 보안 &gt; <strong>앱 비밀번호(16자리 코드) 입력</strong></p>
                 </div>
 
                 <div className="space-y-5">
@@ -582,6 +529,60 @@ export default function SettingsPanel() {
                         <p className="text-sm font-semibold text-emerald-700">SMTP 설정 완료 — 면접 완료 시 자동으로 알림이 발송됩니다.</p>
                     </div>
                 )}
+            </div>
+
+            {/* Deployment & Infrastructure Box */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 text-black">
+                <div className="flex items-center gap-4 mb-8">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center">
+                        <Save className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                        <h3 className="text-xl font-bold text-slate-800">Deployment & Infrastructure</h3>
+                        <p className="text-sm text-slate-500">배포 서버 및 외부 데이터베이스(Supabase 등) 연동 설정</p>
+                    </div>
+                </div>
+
+                <div className="space-y-6">
+                    {[
+                        { id: 'supabase_url', label: 'Supabase URL', placeholder: 'https://xxx.supabase.co', desc: 'PostgreSQL DB 접속 도메인', secret: false },
+                        { id: 'supabase_key', label: 'Supabase API Key', placeholder: 'eyJ...', desc: 'DB 인증용 (anon 또는 service_role)', secret: true },
+                        { id: 'github_token', label: 'GitHub Token', placeholder: 'ghp_...', desc: 'Render.com 연동 및 소스코드 관리용', secret: true },
+                        { id: 'render_api_key', label: 'Render.com API Key', placeholder: 'rnd_...', desc: '무중단 배포 확인 및 트리거용', secret: true },
+                    ].map(item => (
+                        <div key={item.id} className="pt-4 border-t border-slate-100 first:pt-0 first:border-0">
+                            <label className="block text-sm font-semibold text-slate-700 mb-1">{item.label}</label>
+                            <p className="text-xs text-slate-500 mb-3">{item.desc}</p>
+                            <div className="flex gap-3">
+                                <div className="relative flex-1">
+                                    <input
+                                        type={item.secret && !showInfra[item.id] ? 'password' : 'text'}
+                                        placeholder={item.placeholder}
+                                        value={infraKeys[item.id]}
+                                        onChange={e => setInfraKeys(prev => ({ ...prev, [item.id]: e.target.value }))}
+                                        className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-mono"
+                                    />
+                                    {item.secret && (
+                                        <button onClick={() => setShowInfra(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                                            {showInfra[item.id] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                        </button>
+                                    )}
+                                </div>
+                                <button onClick={() => handleSaveInfra(item.id)} disabled={savingInfra}
+                                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition">
+                                    저장
+                                </button>
+                                {hasInfra[item.id] && (
+                                    <button onClick={() => handleClearInfra(item.id)}
+                                        className="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm hover:bg-slate-50 transition">
+                                        삭제
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
         </div>
     );
