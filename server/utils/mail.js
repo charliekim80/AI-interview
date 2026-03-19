@@ -119,7 +119,7 @@ async function sendInterviewNotification({ candidateName, candidateEmail, jobTit
 async function verifyMailConfig(apiKey, toEmail) {
     if (!apiKey) throw new Error('Resend API Key를 입력해주세요.');
 
-    console.log(`[Mail] Resend API Key 검증 및 테스트 메일 발송 중...`);
+    console.log(`[Mail] Resend API Key 검증 및 테스트 메일 발송 중... to: ${toEmail || '(기본값)'}`);
     const resend = new Resend(apiKey);
 
     try {
@@ -131,14 +131,18 @@ async function verifyMailConfig(apiKey, toEmail) {
         });
 
         if (error) {
-            console.error('[Mail] Resend 테스트 실패:', error.message || JSON.stringify(error));
-            throw new Error(error.message || 'Resend API 오류');
+            console.error('[Mail] Resend 테스트 실패:', JSON.stringify(error));
+            const errMsg = error.message || error.name || JSON.stringify(error);
+            const err = new Error(errMsg);
+            err.statusCode = error.statusCode;
+            err.resendName = error.name;
+            throw err;
         }
 
         console.log(`[Mail] 테스트 메일 발송 완료! (id: ${data?.id})`);
         return { success: true, id: data?.id };
     } catch (e) {
-        console.error('[Mail] Resend 검증 실패:', e.message);
+        console.error('[Mail] Resend 검증 실패:', e.message, e.statusCode || '');
         throw e;
     }
 }

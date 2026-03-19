@@ -14,11 +14,21 @@ router.post('/test-email', async (req, res) => {
         const result = await verifyMailConfig(resend_api_key, to_email);
         res.json({ success: true, message: '테스트 메일이 발송되었습니다! 수신함을 확인해 주세요.' });
     } catch (e) {
-        console.error('[Settings] 메일 테스트 실패:', e.message);
+        console.error('[Settings] 메일 테스트 실패:', e.message, e.statusCode || '', e.resendName || '');
+        
+        let hint = 'Resend API Key가 정확한지 확인해 주세요. (re_로 시작)';
+        if (e.resendName === 'validation_error' || e.message?.includes('not verified')) {
+            hint = '도메인 미등록 시 Resend 가입 이메일로만 수신 가능합니다. resend.com > Domains에서 도메인을 등록하거나, 가입 이메일로 테스트하세요.';
+        } else if (e.statusCode === 403 || e.resendName === 'authentication_error') {
+            hint = 'API Key가 유효하지 않습니다. resend.com에서 새 Key를 발급받아 주세요.';
+        } else if (e.statusCode === 429) {
+            hint = '일일 발송 한도(100건)를 초과했습니다. 내일 다시 시도해 주세요.';
+        }
+        
         res.status(500).json({ 
             error: '메일 발송 실패', 
             details: e.message,
-            hint: 'Resend API Key가 정확한지 확인해 주세요. (re_로 시작)'
+            hint
         });
     }
 });
