@@ -221,10 +221,33 @@ export default function SettingsPanel() {
         } catch (e) { showToast(e.message, 'error'); }
     };
 
+    // SMTP 테스트 발송
+    const handleTestMail = async () => {
+        if (!mailUser.trim() || !mailPass.trim() || mailPass.includes('•')) {
+            showToast('계정 정보와 앱 비밀번호를 올바르게 입력(저장)한 후 테스트하세요.', 'error');
+            return;
+        }
+        try {
+            setSavingMail(true);
+            showToast('연결 테스트 중...', 'info');
+            const res = await api.post('/api/settings/test-email', { 
+                mail_user: mailUser, 
+                mail_pass: mailPass 
+            });
+            showToast(res.data.message || '테스트 성공!');
+        } catch (e) {
+            const errMsg = e.response?.data?.details || e.message;
+            const hint = e.response?.data?.hint || '';
+            showToast(`${errMsg}\n${hint}`, 'error');
+        } finally {
+            setSavingMail(false);
+        }
+    };
+
     return (
         <div className="max-w-2xl space-y-6">
             {toast && (
-                <div className={`fixed top-6 right-6 z-50 px-5 py-3 rounded-xl shadow-lg text-white text-sm font-medium ${toast.type === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}>
+                <div className={`fixed top-6 right-6 z-50 px-5 py-3 rounded-xl shadow-lg text-white text-sm font-medium ${toast.type === 'error' ? 'bg-red-500' : toast.type === 'info' ? 'bg-blue-500' : 'bg-emerald-500'}`}>
                     {toast.msg}
                 </div>
             )}
@@ -534,6 +557,21 @@ export default function SettingsPanel() {
                                     className="px-4 py-2 border border-slate-200 text-slate-600 rounded-lg text-sm hover:bg-slate-50 transition">삭제</button>
                             )}
                         </div>
+                    </div>
+
+                    {/* Test Connection Button */}
+                    <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+                        <div className="text-xs text-slate-400">
+                            설정을 저장한 후 테스트 버튼을 눌러 발송 여부를 확인하세요.
+                        </div>
+                        <button
+                            onClick={handleTestMail}
+                            disabled={savingMail || !mailUser.trim() || !mailPass.trim()}
+                            className="px-6 py-2.5 bg-slate-800 text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-slate-900 transition-all shadow-md disabled:opacity-50"
+                        >
+                            <Send className="w-4 h-4" />
+                            {savingMail ? '테스트 중...' : '연결 테스트'}
+                        </button>
                     </div>
                 </div>
 

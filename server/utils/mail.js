@@ -44,8 +44,10 @@ async function sendInterviewNotification({ candidateName, candidateEmail, jobTit
         const mailUser = await getSetting('mail_user');
         const mailPass = await getSetting('mail_pass');
 
+        console.log('[Mail] 알림 발송 시도 중...');
+
         if (!mailUser || !mailPass) {
-            console.log('[Mail] SMTP 설정이 없어 알림 발송을 건너뜁니다. (Settings > 알림 설정에서 구성)');
+            console.warn('[Mail] SMTP 설정(계정/비번)이 없습니다. 발송을 건너뜁니다.');
             return;
         }
 
@@ -59,9 +61,11 @@ async function sendInterviewNotification({ candidateName, candidateEmail, jobTit
                     recipients = parsed;
                 }
             } catch (e) {
-                // JSON 파싱 실패 시 기본값 유지
+                console.error('[Mail] 수신자 목록 JSON 파싱 에러:', e.message);
             }
         }
+
+        console.log(`[Mail] 발송 설정: From=${mailUser}, Recipients=${recipients.join(', ')}`);
 
         // 3. Transporter 생성 (Gmail SMTP)
         const transporter = nodemailer.createTransport({
@@ -70,7 +74,20 @@ async function sendInterviewNotification({ candidateName, candidateEmail, jobTit
                 user: mailUser,
                 pass: mailPass,
             },
+            // 디버그 옵션 추가 (필요 시 주석 해제하여 사용 가능)
+            // debug: true,
+            // logger: true
         });
+
+        // ── SMTP 연결 확인 ──
+        console.log('[Mail] SMTP 서버 연결 확인 중...');
+        try {
+            await transporter.verify();
+            console.log('[Mail] SMTP 서버 연결 성공');
+        } catch (verifyErr) {
+            console.error('[Mail] SMTP 연결 실패 (인증 또는 네트워크 오류):', verifyErr.message);
+            throw verifyErr;
+        }
 
         // 4. 이메일 내용 구성
         const scoreDisplay = aiScore !== undefined && aiScore !== null ? `${aiScore}점` : '분석 중';
@@ -127,11 +144,41 @@ async function sendInterviewNotification({ candidateName, candidateEmail, jobTit
 
         // 5. 발송
         const info = await transporter.sendMail(mailOptions);
-        console.log(`[Mail] 알림 발송 완료: ${candidateName} → ${recipients.join(', ')} (msgId: ${info.messageId})`);
+        console.log(`[Mail] 발송 성공: ${candidateName} → ${recipients.join(', ')} (msgId: ${info.messageId})`);
     } catch (e) {
-        // 이메일 발송 실패는 면접 완료 상태에 영향 없음
-        console.error('[Mail] 알림 발송 실패 (면접 상태에는 영향 없음):', e.message);
+        console.error('[Mail] 최종 에러 (면접 데이터는 보존됨):', e.message);
     }
 }
 
-module.exports = { sendInterviewNotification };
+/**
+ * SMTP 설정을 즉시 검증하고 테스트 메일을 발송합니다 (Admin UI용)
+ */
+async function verifyMailConfig(user, pass) {
+    if (!user || !pass) throw new Error('계정 정보와 앱 비밀번호를 모두 입력해주세요.');
+    
+    console.log(`[Mail] 설정 검증 중: ${user}`);
+    const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: { user, pass }
+    });
+
+    try {
+        await transporter.verify();
+        console.log('[Mail] SMTP 인증 성공');
+        
+        // 인증 성공 시 테스트 메일 발송 시도
+        await transporter.sendMail({
+            from: `"TecAce System" <${user}>`,
+            to: user, // 작성자 본인에게 테스트 발송
+            subject: '[TecAce] 이메일 발송 설정 테스트 완료',
+            text: '이 메일이 도착했다면 AI 인터뷰 완료 알림 설정이 정상적으로 완료된 것입니다.'
+        });
+        
+        return { success: true };
+    } catch (e) {
+        console.error('[Mail] 설정 검증 실패:', e.message);
+        throw e;
+    }
+}
+
+module.exports = { sendInterviewNotification, verifyMailConfig };
