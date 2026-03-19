@@ -234,7 +234,7 @@ export default function SettingsPanel() {
                 mail_user: mailUser, 
                 mail_pass: mailPass 
             });
-            showToast(res.data.message || '테스트 성공!');
+            showToast(`${res.data.message || '테스트 성공!'} \n(Gmail의 '보낸 편지함'을 확인해 보세요)`);
         } catch (e) {
             const errMsg = e.response?.data?.details || e.message;
             const hint = e.response?.data?.hint || '';
@@ -561,8 +561,9 @@ export default function SettingsPanel() {
 
                     {/* Test Connection Button */}
                     <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-                        <div className="text-xs text-slate-400">
-                            설정을 저장한 후 테스트 버튼을 눌러 발송 여부를 확인하세요.
+                        <div className="text-xs text-slate-400 leading-relaxed">
+                            <span className="text-amber-600 font-bold">● 중요:</span> 계정/비번 수정 후 반드시 <span className="text-slate-700 font-bold">먼저 '저장'</span>을 완료한 뒤,<br />
+                            테스트 버튼을 눌러 발송 여부를 확인하세요.
                         </div>
                         <button
                             onClick={handleTestMail}
