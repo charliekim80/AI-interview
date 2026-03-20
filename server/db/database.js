@@ -47,7 +47,7 @@ async function initDb() {
     CREATE TABLE IF NOT EXISTS settings (
       key        TEXT PRIMARY KEY,
       value      TEXT NOT NULL DEFAULT '',
-      updated_at TEXT DEFAULT (datetime('now','localtime'))
+      updated_at TEXT DEFAULT (datetime('now'))
     );
 
     CREATE TABLE IF NOT EXISTS jobs (
@@ -59,7 +59,7 @@ async function initDb() {
       description      TEXT DEFAULT '',
       required_skills  TEXT DEFAULT '',
       preferred_skills TEXT DEFAULT '',
-      created_at       TEXT DEFAULT (datetime('now','localtime'))
+      created_at       TEXT DEFAULT (datetime('now'))
     );
 
     CREATE TABLE IF NOT EXISTS candidates (
@@ -74,7 +74,7 @@ async function initDb() {
       notes       TEXT,
       status      TEXT DEFAULT 'Registered',
       ai_score    REAL,
-      created_at  TEXT DEFAULT (datetime('now','localtime'))
+      created_at  TEXT DEFAULT (datetime('now'))
     );
 
     CREATE TABLE IF NOT EXISTS interviews (
@@ -86,7 +86,7 @@ async function initDb() {
       answers             TEXT DEFAULT '[]',
       ai_analysis         TEXT,
       status              TEXT DEFAULT 'Pending',
-      created_at          TEXT DEFAULT (datetime('now','localtime')),
+      created_at          TEXT DEFAULT (datetime('now')),
       completed_at        TEXT
     );
   `);

@@ -69,7 +69,7 @@ router.post('/', async (req, res) => {
         // 1. 항상 로컬 설정에 백업 (로컬 구동 시 연결값 참조를 위함)
         try {
             await localDb.run(
-                `INSERT INTO settings (key, value, updated_at) VALUES (?, ?, datetime('now','localtime'))
+                `INSERT INTO settings (key, value, updated_at) VALUES (?, ?, datetime('now'))
                  ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
                 [key, value || '']
             );

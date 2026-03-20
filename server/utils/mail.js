@@ -57,8 +57,11 @@ async function sendInterviewNotification({ candidateName, candidateEmail, jobTit
 
         const htmlBody = `
         <div style="font-family: 'DM Sans', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 24px; border-radius: 16px;">
-            <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 32px; border-radius: 12px; margin-bottom: 24px; text-align: center;">
-                <h1 style="color: #fff; font-size: 22px; font-weight: 800; margin: 0 0 4px;">TecAce AI Interview</h1>
+            <div style="background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%); padding: 32px; border-radius: 12px; margin-bottom: 24px; text-align: center;">
+                <div style="margin-bottom: 8px;">
+                    <img src="https://ai-interview-ivn0.onrender.com/client/TecAceAI.png" alt="TecAce Logo" style="height: 32px; width: 32px; vertical-align: middle; margin-right: 10px;" />
+                    <span style="color: #fff; font-size: 22px; font-weight: 800; vertical-align: middle; letter-spacing: -0.5px;">TecAce AI Interview</span>
+                </div>
                 <p style="color: #94a3b8; font-size: 13px; margin: 0;">면접 완료 알림</p>
             </div>
             <div style="background: #fff; border-radius: 12px; padding: 28px; border: 1px solid #e2e8f0; margin-bottom: 16px;">
@@ -87,6 +90,12 @@ async function sendInterviewNotification({ candidateName, candidateEmail, jobTit
                         <td style="padding: 12px 0; color: #1e293b; font-size: 14px; font-weight: 700;">${recDisplay}</td>
                     </tr>
                 </table>
+            </div>
+            <div style="text-align: center; margin: 32px 0 24px;">
+                <a href="https://ai-interview-ivn0.onrender.com/admin/" 
+                   style="background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%); color: #ffffff; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 15px; display: inline-block; box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);">
+                    AI Interview Admin으로 이동
+                </a>
             </div>
             <p style="color: #94a3b8; font-size: 12px; text-align: center; margin: 0;">
                 TecAce AI Interview Platform · Admin 페이지에서 상세 결과를 확인하세요.

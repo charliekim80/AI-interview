@@ -189,7 +189,14 @@ export default function Dashboard({ onNavigate }) {
     const formatDateTime = (dateString) => {
         if (!dateString) return '—';
         try {
-            const d = new Date(dateString);
+            // 타임존 정보(Z 또는 +09:00 등)가 없고, 공백이 포함된 SQL 스타일 날짜인 경우 T와 Z를 보정
+            let normalized = dateString;
+            if (typeof normalized === 'string' && !normalized.includes('Z') && !normalized.includes('+')) {
+                // '2026-03-21 01:00:00' -> '2026-03-21T01:00:00Z'
+                normalized = normalized.replace(' ', 'T') + 'Z';
+            }
+            
+            const d = new Date(normalized);
             const kstDate = new Intl.DateTimeFormat('ko-KR', {
                 year: '2-digit',
                 month: '2-digit',
