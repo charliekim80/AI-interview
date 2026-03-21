@@ -409,16 +409,16 @@ export default function Dashboard({ onNavigate }) {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-white border-b border-slate-200">
-                                {['등록일자', '구분', '이름 및 연락처', '지원 직무', '상태', 'AI Score', '면접 링크', '액션'].map((h, i) => {
+                                {['구분', '이름 및 연락처', '지원 직무', '등록일자', '상태', 'AI Score', '면접 링크', '액션'].map((h, i) => {
                                     let widthClass = '';
-                                    if (i === 0) widthClass = 'w-28 min-w-[112px]';          // 등록일자
-                                    if (i === 1) widthClass = 'min-w-[120px]';               // 구분
-                                    if (i === 2) widthClass = 'min-w-[160px]';               // 이름/연락처
-                                    if (i === 3) widthClass = 'min-w-[160px]';               // 지원 직무
-                                    if (i === 4) widthClass = 'w-24 min-w-[96px]';           // 상태
-                                    if (i === 5) widthClass = 'w-24 min-w-[96px]';           // AI Score
-                                    if (i === 6) widthClass = 'min-w-[150px]';               // 링크
-                                    // i===7 액션: 자동 확장
+                                    if (h === '등록일자') widthClass = 'w-28 min-w-[112px]';
+                                    if (h === '구분') widthClass = 'min-w-[120px]';
+                                    if (h === '이름 및 연락처') widthClass = 'min-w-[160px]';
+                                    if (h === '지원 직무') widthClass = 'min-w-[160px]';
+                                    if (h === '상태') widthClass = 'w-24 min-w-[96px]';
+                                    if (h === 'AI Score') widthClass = 'w-24 min-w-[96px]';
+                                    if (h === '면접 링크') widthClass = 'min-w-[150px]';
+                                    // '액션': 자동 확장
 
                                     return (
                                         <th key={h} className={`px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider break-keep whitespace-nowrap text-center ${widthClass}`}>{h}</th>
@@ -435,9 +435,6 @@ export default function Dashboard({ onNavigate }) {
                                 const sc = statusConfig[c.status] || statusConfig['Registered'];
                                 return (
                                     <tr key={c.id} className="hover:bg-blue-50/30 transition-colors group">
-                                        <td className="px-6 py-4 text-sm tracking-tight font-medium text-slate-500 whitespace-nowrap">
-                                            {formatDateTime(c.created_at)}
-                                        </td>
                                         <td className="px-6 py-4 text-sm font-semibold text-slate-700 break-keep">
                                             {c.department || '—'}
                                         </td>
@@ -452,10 +449,13 @@ export default function Dashboard({ onNavigate }) {
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 min-w-[200px] w-[200px] max-w-[200px]">
+                                        <td className="px-6 py-4 min-w-[160px]">
                                             <span className="text-[13px] font-bold text-slate-700 bg-slate-100 border border-slate-200 px-3 py-1 bg-opacity-80 rounded-lg inline-block">
                                                 {c.job_title || '—'}
                                             </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-sm tracking-tight font-medium text-slate-500 whitespace-nowrap">
+                                            {formatDateTime(c.created_at)}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${sc.color}`}>
