@@ -198,26 +198,31 @@ export default function Dashboard({ onNavigate }) {
             
             const d = new Date(normalized);
             
-            const formatForTz = (tz, label, isSingleLine) => {
+            const formatForTz = (tz, label, yearMode = 'numeric', useComma = true) => {
                 const dateParts = new Intl.DateTimeFormat('ko-KR', {
-                    year: isSingleLine ? 'numeric' : '2-digit', month: '2-digit', day: '2-digit', timeZone: tz
+                    year: yearMode === 'none' ? undefined : yearMode, 
+                    month: '2-digit', 
+                    day: '2-digit', 
+                    timeZone: tz
                 }).format(d).replace(/\. /g, '.').replace(/\.$/, '');
+                
                 const timeParts = new Intl.DateTimeFormat('ko-KR', {
                     hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz
                 }).format(d);
-                return isSingleLine 
-                    ? `${dateParts} - ${timeParts} (${label})`
-                    : `${dateParts} ${timeParts} (${label})`;
+                
+                const separator = useComma ? ', ' : ' ';
+                return `${dateParts}${separator}${timeParts} (${label})`;
             };
 
             if (singleLine) {
-                return `${formatForTz('Asia/Seoul', 'KST', true)} / ${formatForTz('America/Los_Angeles', 'PST', true)}`;
+                // KST: YYYY.MM.DD, HH:MM / PST: MM.DD, HH:MM
+                return `${formatForTz('Asia/Seoul', 'KST', 'numeric', true)} / ${formatForTz('America/Los_Angeles', 'PST', 'none', true)}`;
             }
 
             return (
                 <div className="flex flex-col space-y-0.5">
-                    <span className="block">{formatForTz('Asia/Seoul', 'KST', false)}</span>
-                    <span className="block text-[11px] text-slate-400">{formatForTz('America/Los_Angeles', 'PST', false)}</span>
+                    <span className="block">{formatForTz('Asia/Seoul', 'KST', '2-digit', false)}</span>
+                    <span className="block text-[11px] text-slate-400">{formatForTz('America/Los_Angeles', 'PST', '2-digit', false)}</span>
                 </div>
             );
         } catch (e) {
