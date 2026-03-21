@@ -186,7 +186,7 @@ export default function Dashboard({ onNavigate }) {
         }
     };
 
-    const formatDateTime = (dateString) => {
+    const formatDateTime = (dateString, singleLine = false) => {
         if (!dateString) return '—';
         try {
             // 타임존 정보(Z 또는 +09:00 등)가 없고, 공백이 포함된 SQL 스타일 날짜인 경우 T와 Z를 보정
@@ -207,6 +207,10 @@ export default function Dashboard({ onNavigate }) {
                 }).format(d);
                 return `${dateParts} ${timeParts} (${label})`;
             };
+
+            if (singleLine) {
+                return formatForTz('Asia/Seoul', 'KST');
+            }
 
             return (
                 <div className="flex flex-col space-y-0.5">
@@ -309,7 +313,7 @@ export default function Dashboard({ onNavigate }) {
                                         {act.message}
                                     </p>
                                     <span className="text-[10px] text-slate-400 whitespace-nowrap bg-white px-1.5 py-0.5 rounded border border-slate-200 flex-shrink-0">
-                                        {formatDateTime(act.timestamp)}
+                                        {formatDateTime(act.timestamp, true)}
                                     </span>
                                 </div>
                             </div>
