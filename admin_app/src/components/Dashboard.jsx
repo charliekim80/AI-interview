@@ -198,24 +198,26 @@ export default function Dashboard({ onNavigate }) {
             
             const d = new Date(normalized);
             
-            const formatForTz = (tz, label) => {
+            const formatForTz = (tz, label, isSingleLine) => {
                 const dateParts = new Intl.DateTimeFormat('ko-KR', {
-                    year: '2-digit', month: '2-digit', day: '2-digit', timeZone: tz
+                    year: isSingleLine ? 'numeric' : '2-digit', month: '2-digit', day: '2-digit', timeZone: tz
                 }).format(d).replace(/\. /g, '.').replace(/\.$/, '');
                 const timeParts = new Intl.DateTimeFormat('ko-KR', {
                     hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz
                 }).format(d);
-                return `${dateParts} ${timeParts} (${label})`;
+                return isSingleLine 
+                    ? `${dateParts} - ${timeParts} (${label})`
+                    : `${dateParts} ${timeParts} (${label})`;
             };
 
             if (singleLine) {
-                return formatForTz('Asia/Seoul', 'KST');
+                return `${formatForTz('Asia/Seoul', 'KST', true)} / ${formatForTz('America/Los_Angeles', 'PST', true)}`;
             }
 
             return (
                 <div className="flex flex-col space-y-0.5">
-                    <span className="block">{formatForTz('Asia/Seoul', 'KST')}</span>
-                    <span className="block text-[11px] text-slate-400">{formatForTz('America/Los_Angeles', 'PST')}</span>
+                    <span className="block">{formatForTz('Asia/Seoul', 'KST', false)}</span>
+                    <span className="block text-[11px] text-slate-400">{formatForTz('America/Los_Angeles', 'PST', false)}</span>
                 </div>
             );
         } catch (e) {
