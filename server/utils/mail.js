@@ -63,7 +63,10 @@ async function sendInterviewNotification({ candidateName, candidateEmail, jobTit
             const timeParts = new Intl.DateTimeFormat('ko-KR', {
                 hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz
             }).format(completedDate);
-            return `${dateParts} ${timeParts} (${label})`;
+            // Insert zero-width spaces to prevent auto-linking in Outlook/iOS
+            const safeDate = dateParts.replace(/\./g, '&#8203;.');
+            const safeTime = timeParts.replace(':', '&#8203;:');
+            return `<span style="color: inherit; text-decoration: none; pointer-events: none;">${safeDate} ${safeTime} (${label})</span>`;
         };
         const completedTimeDisplay = `${formatForTz('Asia/Seoul', 'KST')}<br/>${formatForTz('America/Los_Angeles', 'PST')}`;
 

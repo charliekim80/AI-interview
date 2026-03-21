@@ -208,7 +208,12 @@ export default function Dashboard({ onNavigate }) {
                 return `${dateParts} ${timeParts} (${label})`;
             };
 
-            return `${formatForTz('Asia/Seoul', 'KST')} / ${formatForTz('America/Los_Angeles', 'PST')}`;
+            return (
+                <div className="flex flex-col space-y-0.5">
+                    <span className="block">{formatForTz('Asia/Seoul', 'KST')}</span>
+                    <span className="block text-[11px] text-slate-400">{formatForTz('America/Los_Angeles', 'PST')}</span>
+                </div>
+            );
         } catch (e) {
             return dateString;
         }
@@ -398,7 +403,7 @@ export default function Dashboard({ onNavigate }) {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-white border-b border-slate-200">
-                                {['등록일자 (KST)', '구분', '이름 및 연락처', '지원 직무', '상태', 'AI Score', '면접 링크', '액션'].map((h, i) => {
+                                {['등록일자', '구분', '이름 및 연락처', '지원 직무', '상태', 'AI Score', '면접 링크', '액션'].map((h, i) => {
                                     let widthClass = '';
                                     if (i === 0) widthClass = 'w-28 min-w-[112px]';          // 등록일자
                                     if (i === 1) widthClass = 'min-w-[120px]';               // 구분
