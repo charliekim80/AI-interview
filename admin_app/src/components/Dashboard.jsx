@@ -197,21 +197,18 @@ export default function Dashboard({ onNavigate }) {
             }
             
             const d = new Date(normalized);
-            const kstDate = new Intl.DateTimeFormat('ko-KR', {
-                year: '2-digit',
-                month: '2-digit',
-                day: '2-digit',
-                timeZone: 'Asia/Seoul'
-            }).format(d).replace(/\. /g, '.').replace(/\.$/, '');
+            
+            const formatForTz = (tz, label) => {
+                const dateParts = new Intl.DateTimeFormat('ko-KR', {
+                    year: '2-digit', month: '2-digit', day: '2-digit', timeZone: tz
+                }).format(d).replace(/\. /g, '.').replace(/\.$/, '');
+                const timeParts = new Intl.DateTimeFormat('ko-KR', {
+                    hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz
+                }).format(d);
+                return `${dateParts} ${timeParts} (${label})`;
+            };
 
-            const kstTime = new Intl.DateTimeFormat('ko-KR', {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false,
-                timeZone: 'Asia/Seoul'
-            }).format(d);
-
-            return `${kstDate} ${kstTime} (KST)`;
+            return `${formatForTz('Asia/Seoul', 'KST')} / ${formatForTz('America/Los_Angeles', 'PST')}`;
         } catch (e) {
             return dateString;
         }

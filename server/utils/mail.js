@@ -25,7 +25,7 @@ async function getSetting(key) {
 /**
  * 면접 완료 알림 이메일 발송 (Resend HTTP API 사용)
  */
-async function sendInterviewNotification({ candidateName, candidateEmail, jobTitle, aiScore, recommendation }) {
+async function sendInterviewNotification({ candidateName, candidateEmail, jobTitle, aiScore, recommendation, completedAt }) {
     try {
         // 1. Resend API Key 읽기
         const resendApiKey = await getSetting('resend_api_key');
@@ -54,17 +54,29 @@ async function sendInterviewNotification({ candidateName, candidateEmail, jobTit
         // 4. 이메일 내용 구성
         const scoreDisplay = aiScore !== undefined && aiScore !== null ? `${aiScore}점` : '분석 중';
         const recDisplay = recommendation || '—';
+        
+        const completedDate = completedAt ? new Date(completedAt) : new Date();
+        const formatForTz = (tz, label) => {
+            const dateParts = new Intl.DateTimeFormat('ko-KR', {
+                year: '2-digit', month: '2-digit', day: '2-digit', timeZone: tz
+            }).format(completedDate).replace(/\. /g, '.').replace(/\.$/, '');
+            const timeParts = new Intl.DateTimeFormat('ko-KR', {
+                hour: '2-digit', minute: '2-digit', hour12: false, timeZone: tz
+            }).format(completedDate);
+            return `${dateParts} ${timeParts} (${label})`;
+        };
+        const completedTimeDisplay = `${formatForTz('Asia/Seoul', 'KST')}<br/>${formatForTz('America/Los_Angeles', 'PST')}`;
 
         const htmlBody = `
         <div style="font-family: 'DM Sans', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 24px; border-radius: 16px;">
-            <div style="background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%); padding: 32px; border-radius: 12px; margin-bottom: 24px; text-align: center;">
+            <div style="background-color: #06b6d4; background-image: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%); padding: 32px; border-radius: 12px; margin-bottom: 24px; text-align: center;">
                 <div style="margin-bottom: 8px;">
                     <img src="https://ai-interview-ivn0.onrender.com/client/TecAceAI.png" alt="TecAce Logo" style="height: 32px; width: 32px; vertical-align: middle; margin-right: 10px;" />
-                    <span style="color: #fff; font-size: 22px; font-weight: 800; vertical-align: middle; letter-spacing: -0.5px;">TecAce AI Interview</span>
+                    <span style="color: #ffffff; font-size: 22px; font-weight: 800; vertical-align: middle; letter-spacing: -0.5px;">TecAce AI Interview</span>
                 </div>
-                <p style="color: #94a3b8; font-size: 13px; margin: 0;">면접 완료 알림</p>
+                <p style="color: #e2e8f0; font-size: 13px; margin: 0;">면접 완료 알림</p>
             </div>
-            <div style="background: #fff; border-radius: 12px; padding: 28px; border: 1px solid #e2e8f0; margin-bottom: 16px;">
+            <div style="background: #ffffff; border-radius: 12px; padding: 28px; border: 1px solid #e2e8f0; margin-bottom: 16px;">
                 <p style="color: #64748b; font-size: 14px; margin: 0 0 20px;">아래 지원자의 AI 면접이 완료되었습니다.</p>
                 <table style="width: 100%; border-collapse: collapse;">
                     <tr style="border-bottom: 1px solid #f1f5f9;">
@@ -80,9 +92,13 @@ async function sendInterviewNotification({ candidateName, candidateEmail, jobTit
                         <td style="padding: 12px 0; color: #1e293b; font-size: 14px; font-weight: 700;">${jobTitle || '—'}</td>
                     </tr>
                     <tr style="border-bottom: 1px solid #f1f5f9;">
+                        <td style="padding: 12px 0; color: #94a3b8; font-size: 13px; font-weight: 600;">면접 완료 시각</td>
+                        <td style="padding: 12px 0; color: #1e293b; font-size: 13px; font-family: monospace; line-height: 1.5;">${completedTimeDisplay}</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #f1f5f9;">
                         <td style="padding: 12px 0; color: #94a3b8; font-size: 13px; font-weight: 600;">AI 점수</td>
                         <td style="padding: 12px 0;">
-                            <span style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; font-size: 18px; font-weight: 900; padding: 4px 16px; border-radius: 8px;">${scoreDisplay}</span>
+                            <span style="background-color: #10b981; background-image: linear-gradient(135deg, #10b981, #059669); color: #ffffff; font-size: 18px; font-weight: 900; padding: 4px 16px; border-radius: 8px;">${scoreDisplay}</span>
                         </td>
                     </tr>
                     <tr>
@@ -93,7 +109,7 @@ async function sendInterviewNotification({ candidateName, candidateEmail, jobTit
             </div>
             <div style="text-align: center; margin: 32px 0 24px;">
                 <a href="https://ai-interview-ivn0.onrender.com/admin/" 
-                   style="background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%); color: #ffffff; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 15px; display: inline-block; box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);">
+                   style="background-color: #3b82f6; background-image: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%); color: #ffffff; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 15px; display: inline-block; box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);">
                     AI Interview Admin으로 이동
                 </a>
             </div>

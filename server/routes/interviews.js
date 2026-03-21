@@ -154,6 +154,7 @@ router.post('/:token/answers', async (req, res) => {
                 jobTitle: jobInfo.title,
                 aiScore: analysis.overallScore,
                 recommendation: analysis.recommendation,
+                completedAt: new Date().toISOString()
             }).catch(e => console.error('[Mail] 알림 오류:', e.message));
 
         } catch (e) {
