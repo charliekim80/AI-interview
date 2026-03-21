@@ -87,10 +87,6 @@ async function sendInterviewNotification({ candidateName, candidateEmail, jobTit
                         <td style="padding: 12px 0; color: #1e293b; font-size: 14px; font-weight: 700;">${candidateName}</td>
                     </tr>
                     <tr style="border-bottom: 1px solid #f1f5f9;">
-                        <td style="padding: 12px 0; color: #94a3b8; font-size: 13px; font-weight: 600;">이메일</td>
-                        <td style="padding: 12px 0; color: #1e293b; font-size: 14px;">${candidateEmail}</td>
-                    </tr>
-                    <tr style="border-bottom: 1px solid #f1f5f9;">
                         <td style="padding: 12px 0; color: #94a3b8; font-size: 13px; font-weight: 600;">지원 직무</td>
                         <td style="padding: 12px 0; color: #1e293b; font-size: 14px; font-weight: 700;">${jobTitle || '—'}</td>
                     </tr>

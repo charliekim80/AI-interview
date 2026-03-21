@@ -24,7 +24,7 @@ const fs = require('fs');
         
         cp.execSync('git add .');
         try {
-             cp.execSync('git commit -m "feat: improve mobile responsiveness for interview results"');
+             cp.execSync('git commit -m "fix: remove email info from notification template"');
         } catch(e) { /* might be nothing to commit */ }
         
         cp.execSync('git branch -M main');
