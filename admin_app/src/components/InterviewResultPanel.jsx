@@ -203,7 +203,7 @@ export default function InterviewResultPanel({ initialCandidateId }) {
                         </div>
                     </div>
                     {/* 카드 바디 */}
-                    <div className="p-5 grid grid-cols-2 gap-5">
+                    <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
                             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">지원자 답변</p>
                             <div className="bg-slate-50 p-4 rounded-xl text-slate-700 text-sm leading-relaxed whitespace-pre-wrap border border-slate-100">{a.answer || '답변 없음'}</div>
@@ -240,7 +240,7 @@ export default function InterviewResultPanel({ initialCandidateId }) {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-5 items-end">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-end">
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-2">Job Title 필터</label>
                         <div className="relative">
@@ -303,41 +303,41 @@ export default function InterviewResultPanel({ initialCandidateId }) {
                             </div>
 
                             {/* Summary Card */}
-                            <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
-                                <div className="flex items-start gap-8">
-                                    <div className="flex flex-col items-center justify-center p-8 bg-gradient-to-b from-emerald-50 to-teal-50 rounded-3xl border border-emerald-100 min-w-[200px]">
-                                        <Award className="w-10 h-10 text-emerald-500 mb-2" />
-                                        <p className="text-sm font-semibold text-emerald-700 mb-1">AI 종합 점수</p>
-                                        <div className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600">
+                            <div className="bg-white rounded-2xl md:rounded-3xl shadow-sm border border-slate-100 p-5 md:p-8">
+                                <div className="flex flex-col lg:flex-row items-center lg:items-start gap-6 lg:gap-8">
+                                    <div className="flex flex-col items-center justify-center p-6 md:p-8 bg-gradient-to-b from-emerald-50 to-teal-50 rounded-2xl md:rounded-3xl border border-emerald-100 w-full lg:min-w-[200px] lg:w-auto">
+                                        <Award className="w-8 h-8 md:w-10 md:h-10 text-emerald-500 mb-2" />
+                                        <p className="text-xs md:text-sm font-semibold text-emerald-700 mb-1">AI 종합 점수</p>
+                                        <div className="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600">
                                             {resultData.ai_analysis.overallScore}
                                         </div>
                                         <div className="mt-4 px-4 py-1.5 bg-white rounded-full shadow-sm text-emerald-700 font-bold text-sm border border-emerald-100">
                                             {resultData.ai_analysis.recommendation}
                                         </div>
                                     </div>
-                                    <div className="flex-1 space-y-6">
+                                    <div className="flex-1 space-y-6 w-full">
                                         <div>
-                                            <h4 className="text-lg font-bold text-slate-800 mb-2 flex items-center gap-2">
+                                            <h4 className="text-base md:text-lg font-bold text-slate-800 mb-2 flex items-center gap-2">
                                                 <CheckCircle2 className="w-5 h-5 text-blue-500" /> 종합 평가
                                             </h4>
-                                            <p className="text-slate-600 leading-relaxed bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                                            <p className="text-slate-600 text-sm md:text-base leading-relaxed bg-slate-50 p-4 md:p-5 rounded-2xl border border-slate-100">
                                                 {resultData.ai_analysis.summary}
                                             </p>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-6">
-                                            <div className="bg-blue-50/50 rounded-2xl p-5 border border-blue-100">
-                                                <p className="font-bold text-blue-800 mb-3">주요 강점</p>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                                            <div className="bg-blue-50/50 rounded-2xl p-4 md:p-5 border border-blue-100">
+                                                <p className="font-bold text-blue-800 mb-3 text-sm md:text-base">주요 강점</p>
                                                 <ul className="space-y-2">
                                                     {(resultData.ai_analysis.strengths || []).map((s, i) => (
-                                                        <li key={i} className="text-sm text-blue-700 flex items-start gap-2"><span className="text-blue-400">•</span>{s}</li>
+                                                        <li key={i} className="text-xs md:text-sm text-blue-700 flex items-start gap-2"><span className="text-blue-400">•</span>{s}</li>
                                                     ))}
                                                 </ul>
                                             </div>
-                                            <div className="bg-amber-50/50 rounded-2xl p-5 border border-amber-100">
-                                                <p className="font-bold text-amber-800 mb-3">개선 및 참고사항</p>
+                                            <div className="bg-amber-50/50 rounded-2xl p-4 md:p-5 border border-amber-100">
+                                                <p className="font-bold text-amber-800 mb-3 text-sm md:text-base">개선 및 참고사항</p>
                                                 <ul className="space-y-2">
                                                     {(resultData.ai_analysis.improvements || []).map((s, i) => (
-                                                        <li key={i} className="text-sm text-amber-700 flex items-start gap-2"><span className="text-amber-400">•</span>{s}</li>
+                                                        <li key={i} className="text-xs md:text-sm text-amber-700 flex items-start gap-2"><span className="text-amber-400">•</span>{s}</li>
                                                     ))}
                                                 </ul>
                                             </div>

@@ -24,7 +24,7 @@ const fs = require('fs');
         
         cp.execSync('git add .');
         try {
-             cp.execSync('git commit -m "feat: AI Interview Cloud Deployment Phase (Phase 1-4)"');
+             cp.execSync('git commit -m "feat: improve mobile responsiveness for interview results"');
         } catch(e) { /* might be nothing to commit */ }
         
         cp.execSync('git branch -M main');
