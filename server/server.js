@@ -125,7 +125,7 @@ app.get('/api/stats/activities', async (req, res) => {
                 activities.push({
                     id: `completed-${item.completed_at}`,
                     type: 'completed',
-                    message: `${candidateName} 면접 완료`,
+                    message: `${candidateName} 지원자 면접 완료`,
                     timestamp: item.completed_at
                 });
             }
