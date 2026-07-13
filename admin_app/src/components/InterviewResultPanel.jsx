@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
-import { FileSpreadsheet, ChevronDown, Award, CheckCircle2, Loader2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { FileSpreadsheet, FileText, ChevronDown, Award, CheckCircle2, Loader2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import api from '../api/client';
 
 export default function InterviewResultPanel({ initialCandidateId }) {
@@ -12,11 +14,13 @@ export default function InterviewResultPanel({ initialCandidateId }) {
     const [selectedCandidateId, setSelectedCandidateId] = useState('');
 
     const [loading, setLoading] = useState(false);
+    const [pdfLoading, setPdfLoading] = useState(false);
     const [resultData, setResultData] = useState(null);
     const [candidateInfo, setCandidateInfo] = useState(null);
     const [includeSalary, setIncludeSalary] = useState(true);
 
     const [toast, setToast] = useState(null);
+    const pdfRef = useRef(null);
 
     useEffect(() => {
         api.get('/api/jobs').then(r => setJobs(r.data)).catch(console.error);
@@ -101,6 +105,57 @@ export default function InterviewResultPanel({ initialCandidateId }) {
             }
         });
         return labels;
+    };
+
+    const handleExportPdf = async () => {
+        if (!pdfRef.current || !candidateInfo) {
+            showToast('결과를 먼저 조회해주세요.', 'error');
+            return;
+        }
+        try {
+            setPdfLoading(true);
+            showToast('PDF 생성 중... 잠시 기다려주세요.');
+
+            const element = pdfRef.current;
+            const canvas = await html2canvas(element, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: '#f8fafc',
+                scrollY: -window.scrollY,
+                windowWidth: element.scrollWidth,
+                windowHeight: element.scrollHeight,
+                logging: false
+            });
+
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            const imgWidthMm = pageWidth;
+            const imgHeightMm = (canvas.height * imgWidthMm) / canvas.width;
+
+            // 다중 페이지 처리
+            let yOffset = 0;
+            let pageIndex = 0;
+            while (yOffset < imgHeightMm) {
+                if (pageIndex > 0) pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, -yOffset, imgWidthMm, imgHeightMm);
+                yOffset += pageHeight;
+                pageIndex++;
+            }
+
+            const kstToday = new Intl.DateTimeFormat('ko-KR', {
+                year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'Asia/Seoul'
+            }).format(new Date()).replace(/\. /g, '-').replace(/\.$/, '');
+
+            pdf.save(`${candidateInfo.name}_AI면접분석_${kstToday}.pdf`);
+            showToast('PDF 다운로드가 완료되었습니다.');
+        } catch (e) {
+            console.error('PDF Export Error:', e);
+            showToast('PDF 생성 중 오류가 발생했습니다.', 'error');
+        } finally {
+            setPdfLoading(false);
+        }
     };
 
     const handleExportExcel = () => {
@@ -275,7 +330,8 @@ export default function InterviewResultPanel({ initialCandidateId }) {
                 </div>
             </div>
 
-            {/* Result View */}
+            {/* Result View — PDF 캡처 대상 영역 */}
+            <div ref={pdfRef}>
             {resultData && (
                 <>
                     {!resultData.ai_analysis ? (
@@ -298,6 +354,17 @@ export default function InterviewResultPanel({ initialCandidateId }) {
                                     </label>
                                     <button onClick={handleExportExcel} className="bg-emerald-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:-translate-y-0.5 transition-all shadow-md hover:shadow-lg">
                                         <FileSpreadsheet className="w-4 h-4" /> Excel 다운로드
+                                    </button>
+                                    <button
+                                        onClick={handleExportPdf}
+                                        disabled={pdfLoading}
+                                        className="bg-rose-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:-translate-y-0.5 transition-all shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
+                                    >
+                                        {pdfLoading
+                                            ? <Loader2 className="w-4 h-4 animate-spin" />
+                                            : <FileText className="w-4 h-4" />
+                                        }
+                                        PDF 다운로드
                                     </button>
                                 </div>
                             </div>
@@ -362,6 +429,7 @@ export default function InterviewResultPanel({ initialCandidateId }) {
                     )}
                 </>
             )}
+            </div>
         </div>
     );
 }
