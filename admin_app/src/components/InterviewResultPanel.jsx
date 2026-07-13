@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { FileSpreadsheet, FileText, ChevronDown, Award, CheckCircle2, Loader2 } from 'lucide-react';
+import { FileSpreadsheet, FileText, ChevronDown, Award, CheckCircle2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import api from '../api/client';
 
 export default function InterviewResultPanel({ initialCandidateId }) {
@@ -14,7 +12,6 @@ export default function InterviewResultPanel({ initialCandidateId }) {
     const [selectedCandidateId, setSelectedCandidateId] = useState('');
 
     const [loading, setLoading] = useState(false);
-    const [pdfLoading, setPdfLoading] = useState(false);
     const [resultData, setResultData] = useState(null);
     const [candidateInfo, setCandidateInfo] = useState(null);
     const [includeSalary, setIncludeSalary] = useState(true);
@@ -107,55 +104,19 @@ export default function InterviewResultPanel({ initialCandidateId }) {
         return labels;
     };
 
-    const handleExportPdf = async () => {
-        if (!pdfRef.current || !candidateInfo) {
+    const handleExportPdf = () => {
+        if (!candidateInfo) {
             showToast('결과를 먼저 조회해주세요.', 'error');
             return;
         }
-        try {
-            setPdfLoading(true);
-            showToast('PDF 생성 중... 잠시 기다려주세요.');
-
-            const element = pdfRef.current;
-            const canvas = await html2canvas(element, {
-                scale: 2,
-                useCORS: true,
-                backgroundColor: '#f8fafc',
-                scrollY: -window.scrollY,
-                windowWidth: element.scrollWidth,
-                windowHeight: element.scrollHeight,
-                logging: false
-            });
-
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-            const pageWidth = pdf.internal.pageSize.getWidth();
-            const pageHeight = pdf.internal.pageSize.getHeight();
-            const imgWidthMm = pageWidth;
-            const imgHeightMm = (canvas.height * imgWidthMm) / canvas.width;
-
-            // 다중 페이지 처리
-            let yOffset = 0;
-            let pageIndex = 0;
-            while (yOffset < imgHeightMm) {
-                if (pageIndex > 0) pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 0, -yOffset, imgWidthMm, imgHeightMm);
-                yOffset += pageHeight;
-                pageIndex++;
-            }
-
-            const kstToday = new Intl.DateTimeFormat('ko-KR', {
-                year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'Asia/Seoul'
-            }).format(new Date()).replace(/\. /g, '-').replace(/\.$/, '');
-
-            pdf.save(`${candidateInfo.name}_AI면접분석_${kstToday}.pdf`);
-            showToast('PDF 다운로드가 완료되었습니다.');
-        } catch (e) {
-            console.error('PDF Export Error:', e);
-            showToast('PDF 생성 중 오류가 발생했습니다.', 'error');
-        } finally {
-            setPdfLoading(false);
-        }
+        // 인쇄 전 제목 임시 설정
+        const prevTitle = document.title;
+        const kstToday = new Intl.DateTimeFormat('ko-KR', {
+            year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'Asia/Seoul'
+        }).format(new Date()).replace(/\. /g, '-').replace(/\.$/, '');
+        document.title = `${candidateInfo.name}_AI면접분석_${kstToday}`;
+        window.print();
+        document.title = prevTitle;
     };
 
     const handleExportExcel = () => {
@@ -283,8 +244,8 @@ export default function InterviewResultPanel({ initialCandidateId }) {
                 </div>
             )}
 
-            {/* Selection Card */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
+            {/* Selection Card — 인쇄 시 숨김 */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 no-print">
                 <div className="flex items-center gap-4 mb-8">
                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
                         <Award className="w-6 h-6 text-white" />
@@ -347,7 +308,7 @@ export default function InterviewResultPanel({ initialCandidateId }) {
                                     <h2 className="text-2xl font-bold text-slate-800">{candidateInfo.name} — 면접 분석 결과</h2>
                                     <p className="text-sm text-slate-500 mt-1">{candidateInfo.department || '미분류'} · {candidateInfo.job_title}</p>
                                 </div>
-                                <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-4 no-print">
                                     <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer bg-white px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 shadow-sm transition-colors">
                                         <input type="checkbox" checked={includeSalary} onChange={e => setIncludeSalary(e.target.checked)} className="w-4 h-4 rounded text-indigo-600 cursor-pointer" />
                                         <span className="font-semibold text-slate-700">희망연봉 포함</span>
@@ -357,14 +318,10 @@ export default function InterviewResultPanel({ initialCandidateId }) {
                                     </button>
                                     <button
                                         onClick={handleExportPdf}
-                                        disabled={pdfLoading}
-                                        className="bg-rose-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:-translate-y-0.5 transition-all shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
+                                        className="bg-rose-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:-translate-y-0.5 transition-all shadow-md hover:shadow-lg"
                                     >
-                                        {pdfLoading
-                                            ? <Loader2 className="w-4 h-4 animate-spin" />
-                                            : <FileText className="w-4 h-4" />
-                                        }
-                                        PDF 다운로드
+                                        <FileText className="w-4 h-4" />
+                                        PDF 저장
                                     </button>
                                 </div>
                             </div>

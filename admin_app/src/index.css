@@ -47,3 +47,36 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* ─── Print / PDF 저장 스타일 ─────────────────────────── */
+@media print {
+  /* 사이드바, 헤더, 조회 필터 카드, 버튼 영역 숨김 */
+  nav, aside, header,
+  [data-print="hide"],
+  .no-print {
+    display: none !important;
+  }
+
+  /* 결과 영역 전체 너비로 확장 */
+  body {
+    background: white !important;
+    font-size: 11pt;
+  }
+
+  /* 페이지 여백 설정 */
+  @page {
+    margin: 15mm 12mm;
+    size: A4 portrait;
+  }
+
+  /* 카드 배경색 유지 */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* 카드가 페이지 경계에서 잘리지 않도록 */
+  .bg-white, [class*="rounded"] {
+    break-inside: avoid;
+  }
+}
