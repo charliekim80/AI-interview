@@ -49,7 +49,7 @@ body {
 }
 
 /* ─── Print / PDF 저장 스타일 ─────────────────────────── */
-/* html2pdf.js 기반 PDF 저장이 주 방식. @media print는 보조 fallback */
+/* window.print() 기반 텍스트 PDF 저장이 주 방식 (가독성 중심 조판) */
 @media print {
   /* 사이드바, 헤더, 조회 필터 카드, 버튼 영역 숨김 */
   nav, aside, header,
@@ -60,7 +60,9 @@ body {
 
   body {
     background: white !important;
+    font-family: system-ui, -apple-system, 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif !important;
     font-size: 11pt;
+    color: #111827 !important;
   }
 
   @page {
@@ -74,14 +76,45 @@ body {
     print-color-adjust: exact !important;
   }
 
-  /* 카드가 페이지 경계에서 잘리지 않도록 */
+  /* 카드가 페이지 경계에서 잘리지 않도록 (기본 보호) */
   .bg-white, [class*="rounded"] {
     break-inside: avoid;
   }
 
-  /* 그라디언트 점수 텍스트 — 인쇄 시 단색으로 fallback */
+  /* 그라디언트 점수 텍스트 — 인쇄 시 단색 굵은 텍스트로 전환 */
   .pdf-score-text {
     -webkit-text-fill-color: #059669 !important;
     color: #059669 !important;
+    background: none !important;
+  }
+
+  /* 질문/요약 카드 — 잘림 방지 + 옅은 테두리 + 카드 간 간격 */
+  .print-card {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    display: block;
+    margin-bottom: 24px;
+    border: 1px solid #d1d5db !important;
+    box-shadow: none !important;
+  }
+
+  /* 질문 타이틀 강조 */
+  .print-card p.font-semibold {
+    font-weight: 700 !important;
+    color: #0f172a !important;
+  }
+
+  /* 지원자 답변 박스 — 옅은 회색 배경 + 좌측 강조선 */
+  .print-answer-box {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    border-left: 3px solid #94a3b8 !important;
+  }
+
+  /* AI 피드백 박스 — 옅은 회색 배경 + 좌측 강조선 */
+  .print-feedback-box {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    border-left: 3px solid #10b981 !important;
   }
 }
