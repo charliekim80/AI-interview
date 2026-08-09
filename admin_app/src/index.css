@@ -61,12 +61,12 @@ body {
   body {
     background: white !important;
     font-family: system-ui, -apple-system, 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif !important;
-    font-size: 11pt;
+    font-size: 10pt;
     color: #111827 !important;
   }
 
   @page {
-    margin: 15mm 12mm;
+    margin: 12mm 10mm;
     size: A4 portrait;
   }
 
@@ -81,6 +81,44 @@ body {
     break-inside: avoid;
   }
 
+  /* 결과 뷰어 모달(fixed + max-h + overflow-y-auto)을 인쇄 시 일반 문서 흐름으로 해제.
+     이 규칙이 없으면 window.print()가 클리핑된 스크롤 영역만 반복 캡처해 Q1 이후
+     내용이 전부 유실된다. */
+  .print-modal-backdrop {
+    position: static !important;
+    inset: auto !important;
+    background: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    display: block !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    z-index: auto !important;
+  }
+  .print-modal-panel {
+    box-shadow: none !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    width: auto !important;
+    max-width: none !important;
+  }
+  .print-modal-content {
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+  /* 위 세 요소는 rounded-* 클래스를 갖고 있어 아래 범용 break-inside:avoid 규칙에
+     걸리는데, 이들은 전체 리포트(여러 페이지 분량)를 감싸는 컨테이너이므로
+     "안 잘리게" 하면 브라우저가 통째로 다음 페이지로 밀어 첫 페이지가 빈 채로
+     남는다. 컨테이너 자체는 자유롭게 잘리도록 풀어주고, 잘리면 안 되는 단위는
+     각 .print-card가 개별적으로 담당한다. */
+  .print-modal-backdrop,
+  .print-modal-panel,
+  .print-modal-content {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+
   /* 그라디언트 점수 텍스트 — 인쇄 시 단색 굵은 텍스트로 전환 */
   .pdf-score-text {
     -webkit-text-fill-color: #059669 !important;
@@ -88,14 +126,27 @@ body {
     background: none !important;
   }
 
-  /* 질문/요약 카드 — 잘림 방지 + 옅은 테두리 + 카드 간 간격 */
+  /* 질문/요약 카드 — 잘림 방지 + 옅은 테두리 + 카드 간 간격(밀도 확보를 위해 축소) */
   .print-card {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
     display: block;
-    margin-bottom: 24px;
+    margin-bottom: 10px;
     border: 1px solid #d1d5db !important;
     box-shadow: none !important;
+  }
+
+  /* 요약(점수) 카드 — 패딩·점수 폰트 축소 */
+  .print-summary-card {
+    padding: 10px 14px !important;
+  }
+  .print-summary-card .pdf-score-text {
+    font-size: 32px !important;
+  }
+
+  /* 질문 카드 헤더 바 — 패딩 축소 */
+  .print-qa-header {
+    padding: 6px 10px !important;
   }
 
   /* 질문 타이틀 강조 */
@@ -104,11 +155,24 @@ body {
     color: #0f172a !important;
   }
 
+  /* 답변(분량 많음) : AI 피드백(분량 적음) = 3:1 비율로 고정.
+     Tailwind md:grid-cols-2는 인쇄 가용폭이 md 브레이크포인트보다 좁아 1단으로
+     붕괴할 수 있어, 인쇄 전용 그리드로 명시적으로 덮어쓴다. */
+  .print-qa-grid {
+    display: grid !important;
+    grid-template-columns: 3fr 1fr !important;
+    gap: 8px !important;
+    padding: 6px 10px !important;
+  }
+
   /* 지원자 답변 박스 — 옅은 회색 배경 + 좌측 강조선 */
   .print-answer-box {
     background: #f8fafc !important;
     border: 1px solid #e2e8f0 !important;
     border-left: 3px solid #94a3b8 !important;
+    padding: 8px 10px !important;
+    font-size: 9.5pt !important;
+    line-height: 1.45 !important;
   }
 
   /* AI 피드백 박스 — 옅은 회색 배경 + 좌측 강조선 */
@@ -116,5 +180,8 @@ body {
     background: #f8fafc !important;
     border: 1px solid #e2e8f0 !important;
     border-left: 3px solid #10b981 !important;
+    padding: 8px 10px !important;
+    font-size: 9.5pt !important;
+    line-height: 1.45 !important;
   }
 }

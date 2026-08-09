@@ -262,17 +262,17 @@ export default function Dashboard({ onNavigate }) {
             {/* Result Modal */}
             {modalCandidate && (
                 <div
-                    className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-start justify-center p-4 overflow-y-auto"
+                    className="print-modal-backdrop fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-start justify-center p-4 overflow-y-auto"
                     onClick={(e) => { if (e.target === e.currentTarget) { setModalCandidate(null); setModalResultData(null); } }}
                 >
-                    <div className="bg-slate-50 rounded-2xl shadow-2xl w-full max-w-5xl mt-8 mb-8 relative">
+                    <div className="print-modal-panel bg-slate-50 rounded-2xl shadow-2xl w-full max-w-5xl mt-8 mb-8 relative">
                         <button
                             onClick={() => { setModalCandidate(null); setModalResultData(null); }}
-                            className="absolute top-4 right-4 z-10 p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded-xl transition-colors"
+                            className="no-print absolute top-4 right-4 z-10 p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded-xl transition-colors"
                         >
                             <X className="w-5 h-5" />
                         </button>
-                        <div className="p-6 overflow-y-auto max-h-[90vh]">
+                        <div className="print-modal-content p-6 overflow-y-auto max-h-[90vh]">
                             {modalLoading ? (
                                 <div className="flex items-center justify-center py-24 text-slate-400">결과를 불러오는 중입니다...</div>
                             ) : (
@@ -287,6 +287,7 @@ export default function Dashboard({ onNavigate }) {
                 </div>
             )}
 
+            <div className={modalCandidate ? 'no-print' : ''}>
             {/* Stats */}
             <div className="grid grid-cols-4 gap-6">
                 {statCards.map((s, i) => {
@@ -587,6 +588,7 @@ export default function Dashboard({ onNavigate }) {
                         </div>
                     </div>
                 )}
+            </div>
             </div>
         </div>
     );

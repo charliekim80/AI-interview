@@ -128,7 +128,7 @@ export default function InterviewResult({ candidate, resultData, onBack }) {
             </div>
 
             {/* Summary Board */}
-            <div className="print-card bg-white rounded-2xl md:rounded-3xl shadow-sm border border-slate-100 p-5 md:p-8">
+            <div className="print-card print-summary-card bg-white rounded-2xl md:rounded-3xl shadow-sm border border-slate-100 p-5 md:p-8">
                 <div className="flex flex-col lg:flex-row items-center lg:items-start gap-6 lg:gap-8">
                     {/* Score Circle */}
                     <div className="flex flex-col items-center justify-center p-6 md:p-8 bg-gradient-to-b from-emerald-50 to-teal-50 rounded-2xl md:rounded-3xl border border-emerald-100 w-full lg:min-w-[200px] lg:w-auto">
@@ -197,7 +197,7 @@ export default function InterviewResult({ candidate, resultData, onBack }) {
 
                             return (
                                 <div key={i} className={`print-card bg-white rounded-2xl shadow-sm border overflow-hidden ${a.isFollowUp ? 'ml-8 border-l-4 border-l-blue-400 border-slate-100' : 'border-slate-100'}`}>
-                                    <div className={`${a.isFollowUp ? 'bg-blue-50/30' : 'bg-slate-50'} border-b border-slate-100 p-5 flex items-start justify-between gap-4`}>
+                                    <div className={`print-qa-header ${a.isFollowUp ? 'bg-blue-50/30' : 'bg-slate-50'} border-b border-slate-100 p-5 flex items-start justify-between gap-4`}>
                                         <div>
                                             {a.isFollowUp ? (
                                                 <span className="inline-block px-3 py-1 bg-blue-100 text-blue-700 font-bold text-xs rounded-lg mb-2 shadow-sm">
@@ -215,7 +215,7 @@ export default function InterviewResult({ candidate, resultData, onBack }) {
                                             <p className="text-xl font-black text-emerald-600 leading-none">{a.score}</p>
                                         </div>
                                     </div>
-                                    <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+                                    <div className="print-qa-grid p-5 grid grid-cols-1 md:grid-cols-2 gap-5">
                                         <div>
                                             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">지원자 답변</p>
                                             <div className="print-answer-box bg-slate-50 p-4 rounded-xl text-slate-700 text-sm leading-relaxed whitespace-pre-wrap border border-slate-100">

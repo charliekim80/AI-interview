@@ -82,6 +82,46 @@ InterviewResult.jsx(대시보드 모달)에 동일하게 적용.
 
 ---
 
+## Task ID: TASK-003
+## 작업 완료 일시: 2026-08-09
+## 브랜치: fix/pdf-print-content-loss
+
+### 구현 요약
+찰리가 업로드한 실제 PDF를 PyMuPDF로 렌더링해 원인을 특정 — 모달의 `fixed + max-h-[90vh]
+overflow-y-auto` 클리핑 때문에 window.print()가 내용을 거의 다 유실하는 Critical 버그를
+발견·수정. 추가로 답변:AI피드백 = 3:1 그리드 고정 및 인쇄 밀도 개선 진행.
+
+### 변경된 파일
+| 파일 | 변경 유형 | 변경 내용 |
+|---|---|---|
+| admin_app/src/components/Dashboard.jsx | 수정 | 모달 백드롭/패널/콘텐츠에 print-modal-* 클래스, X버튼에 no-print, Stats+테이블 영역을 모달 열림 시 조건부 no-print로 래핑 |
+| admin_app/src/App.jsx | 수정 | 모바일 헤더 바 + 반응형 중복 타이틀에 no-print 추가 (인쇄 시 유효 뷰포트 폭이 lg 브레이크포인트 미만으로 계산되어 lg:hidden 요소가 노출되는 문제) |
+| admin_app/src/components/InterviewResult.jsx, InterviewResultPanel.jsx | 수정 | 답변/피드백 그리드에 print-qa-grid, 카드 헤더에 print-qa-header, 점수 카드에 print-summary-card 클래스 추가 |
+| admin_app/src/index.css | 수정 | .print-modal-backdrop/panel/content(fixed·overflow 해제 + break-inside:auto로 범용 규칙 예외 처리), .print-qa-grid(3:1 고정 그리드), 카드 마진·패딩·폰트 축소 |
+
+### 주요 로직 설명
+1. **모달 언랩**: `.print-modal-backdrop { position:static; overflow:visible; ... }` 등으로 인쇄 시 모달을 일반 문서 흐름으로 전환. 단, 이 요소들이 `rounded-*` 클래스를 가져 기존 범용 `break-inside:avoid` 규칙에 걸리면 전체 리포트가 한 페이지에 안 들어간다고 판단해 통째로 다음 페이지로 밀려 첫 페이지가 비는 부작용이 있어, `break-inside:auto !important`로 별도 예외 처리.
+2. **반응형 브레이크포인트 함정**: 인쇄 시 브라우저가 계산하는 유효 뷰포트 폭이 화면 뷰포트(1400px)가 아니라 페이지 폭 기준이라 `lg:`(1024px) 브레이크포인트 미만으로 떨어짐 → `lg:hidden` 모바일 전용 요소들이 인쇄에서 노출됨. `no-print`로 명시적 처리. 같은 이유로 `md:grid-cols-2`도 무너질 수 있어 답변/피드백 그리드는 `print-qa-grid`로 브레이크포인트에 의존하지 않는 explicit grid-template-columns(3fr 1fr)로 대체.
+3. **밀도 개선**: 카드 margin-bottom 24px→10px, 카드/그리드 패딩 축소, 본문 폰트 11pt→10pt·9.5pt, 점수 폰트 축소.
+
+### 테스트 결과
+- [x] Admin App 빌드 확인 (`npm run build`) — 성공
+- [x] ESLint — 신규 에러 0건 (기존 이슈만 잔존)
+- [x] **실제 PDF 파일 기준 검증** (지난 세션의 교훈 반영): `puppeteer-core`로 기존 로컬 Chrome을 구동해 로그인 → 모달/독립 페이지 각각 열기 → `emulateMediaType('print')` → `page.pdf()`로 실제 PDF 생성 → PyMuPDF로 렌더링해 픽셀 단위 육안 확인
+  - 모달: 3페이지(전부 중복·Q1에서 잘림) → 12페이지(Q1~Q10 + 꼬리질문 전체 정상 출력)로 수정 확인
+  - 독립 페이지: 12페이지, 처음부터 콘텐츠 정상 출력 확인 (이 경로는 애초에 fixed 모달 구조가 아니라 문제 없었음)
+  - 두 경로 모두 네브바/모바일헤더/X버튼/백드롭 노출 없음, 3:1 그리드 정상 적용, 페이지 잘림 없음을 렌더링된 이미지로 직접 확인
+
+### 특이사항
+- TASK-002가 이미 main에 배포되어 있어, 이 수정이 병합되기 전까지 프로덕션의 모달 PDF 저장은 실제로 깨져 있는 상태입니다.
+- 이번 검증에 사용한 `puppeteer-core`(scratchpad에 격리 설치, 기존 로컬 Chrome 재사용)는 프로젝트 의존성에 포함되지 않았고 검증 목적으로만 사용했습니다.
+
+### Claude 리뷰 요청 포인트
+- `no-print`를 조건부(`modalCandidate ? 'no-print' : ''`)로만 준 이유(모달이 없을 때 대시보드 자체를 인쇄하는 경로는 원래 지원 대상이 아니었음)가 타당한지
+- 12페이지가 이 특정 지원자(답변이 유난히 길고 꼬리질문이 많음) 기준 결과라 실제로는 지원자별 편차가 클 수 있음 — 평균적인 지원자 기준으로 한 번 더 확인 권장
+
+---
+
 ## 작성 양식 (예시)
 
 ```
