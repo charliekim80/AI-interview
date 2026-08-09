@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { FileSpreadsheet, FileText, ChevronDown, Award, CheckCircle2 } from 'lucide-react';
+import { FileSpreadsheet, FileText, ChevronDown, Award, CheckCircle2, Loader2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import html2pdf from 'html2pdf.js';
 import api from '../api/client';
 
 export default function InterviewResultPanel({ initialCandidateId }) {
@@ -15,6 +16,7 @@ export default function InterviewResultPanel({ initialCandidateId }) {
     const [resultData, setResultData] = useState(null);
     const [candidateInfo, setCandidateInfo] = useState(null);
     const [includeSalary, setIncludeSalary] = useState(true);
+    const [isPdfLoading, setIsPdfLoading] = useState(false);
 
     const [toast, setToast] = useState(null);
     const pdfRef = useRef(null);
@@ -104,19 +106,52 @@ export default function InterviewResultPanel({ initialCandidateId }) {
         return labels;
     };
 
-    const handleExportPdf = () => {
-        if (!candidateInfo) {
+    const handleExportPdf = async () => {
+        if (!candidateInfo || !pdfRef.current) {
             showToast('결과를 먼저 조회해주세요.', 'error');
             return;
         }
-        // 인쇄 전 제목 임시 설정
-        const prevTitle = document.title;
+
         const kstToday = new Intl.DateTimeFormat('ko-KR', {
             year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'Asia/Seoul'
         }).format(new Date()).replace(/\. /g, '-').replace(/\.$/, '');
-        document.title = `${candidateInfo.name}_AI면접분석_${kstToday}`;
-        window.print();
-        document.title = prevTitle;
+        const fileName = `${candidateInfo.name}_AI면접분석_${kstToday}.pdf`;
+
+        // 그라디언트 텍스트(bg-clip-text) → PDF 캡처 시 투명해지는 문제 방지
+        const gradientEls = pdfRef.current.querySelectorAll('.pdf-score-text');
+        gradientEls.forEach(el => {
+            el.style.webkitTextFillColor = '#059669';
+            el.style.color = '#059669';
+        });
+
+        setIsPdfLoading(true);
+        try {
+            const opt = {
+                margin:      [12, 10, 12, 10],
+                filename:    fileName,
+                image:       { type: 'jpeg', quality: 0.97 },
+                html2canvas: {
+                    scale: 2,
+                    useCORS: true,
+                    logging: false,
+                    backgroundColor: '#f8fafc',
+                },
+                jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak:   { mode: ['avoid-all', 'css', 'legacy'] },
+            };
+            await html2pdf().set(opt).from(pdfRef.current).save();
+            showToast(`PDF 저장 완료: ${fileName}`);
+        } catch (e) {
+            console.error('PDF Export Error:', e);
+            showToast('PDF 생성 중 오류가 발생했습니다.', 'error');
+        } finally {
+            // 그라디언트 복원
+            gradientEls.forEach(el => {
+                el.style.webkitTextFillColor = '';
+                el.style.color = '';
+            });
+            setIsPdfLoading(false);
+        }
     };
 
     const handleExportExcel = () => {
@@ -318,10 +353,12 @@ export default function InterviewResultPanel({ initialCandidateId }) {
                                     </button>
                                     <button
                                         onClick={handleExportPdf}
-                                        className="bg-rose-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:-translate-y-0.5 transition-all shadow-md hover:shadow-lg"
+                                        disabled={isPdfLoading}
+                                        className="bg-rose-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:-translate-y-0.5 transition-all shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
                                     >
-                                        <FileText className="w-4 h-4" />
-                                        PDF 저장
+                                        {isPdfLoading
+                                            ? <><Loader2 className="w-4 h-4 animate-spin" /> PDF 생성 중...</>
+                                            : <><FileText className="w-4 h-4" /> PDF 저장</>}
                                     </button>
                                 </div>
                             </div>
@@ -332,7 +369,7 @@ export default function InterviewResultPanel({ initialCandidateId }) {
                                     <div className="flex flex-col items-center justify-center p-6 md:p-8 bg-gradient-to-b from-emerald-50 to-teal-50 rounded-2xl md:rounded-3xl border border-emerald-100 w-full lg:min-w-[200px] lg:w-auto">
                                         <Award className="w-8 h-8 md:w-10 md:h-10 text-emerald-500 mb-2" />
                                         <p className="text-xs md:text-sm font-semibold text-emerald-700 mb-1">AI 종합 점수</p>
-                                        <div className="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600">
+                                        <div className="pdf-score-text text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600">
                                             {resultData.ai_analysis.overallScore}
                                         </div>
                                         <div className="mt-4 px-4 py-1.5 bg-white rounded-full shadow-sm text-emerald-700 font-bold text-sm border border-emerald-100">
