@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { FileSpreadsheet, FileText, ChevronDown, Award, CheckCircle2 } from 'lucide-react';
+import { FileSpreadsheet, FileText, ChevronDown, Award, CheckCircle2, Loader2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import api from '../api/client';
 
 export default function InterviewResultPanel({ initialCandidateId }) {
@@ -15,6 +17,7 @@ export default function InterviewResultPanel({ initialCandidateId }) {
     const [resultData, setResultData] = useState(null);
     const [candidateInfo, setCandidateInfo] = useState(null);
     const [includeSalary, setIncludeSalary] = useState(true);
+    const [isPdfLoading, setIsPdfLoading] = useState(false);
 
     const [toast, setToast] = useState(null);
     const pdfRef = useRef(null);
@@ -104,19 +107,101 @@ export default function InterviewResultPanel({ initialCandidateId }) {
         return labels;
     };
 
-    const handleExportPdf = () => {
-        if (!candidateInfo) {
+    const handleExportPdf = async () => {
+        if (!candidateInfo || !pdfRef.current) {
             showToast('결과를 먼저 조회해주세요.', 'error');
             return;
         }
-        // 인쇄 전 제목 임시 설정
-        const prevTitle = document.title;
+
         const kstToday = new Intl.DateTimeFormat('ko-KR', {
             year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'Asia/Seoul'
         }).format(new Date()).replace(/\. /g, '-').replace(/\.$/, '');
-        document.title = `${candidateInfo.name}_AI면접분석_${kstToday}`;
-        window.print();
-        document.title = prevTitle;
+        const fileName = `${candidateInfo.name}_AI면접분석_${kstToday}.pdf`;
+
+        setIsPdfLoading(true);
+        const gradientEls = pdfRef.current.querySelectorAll('.pdf-score-text');
+        const originalGetComputedStyle = window.getComputedStyle;
+
+        try {
+            // 1) 그라디언트 텍스트 투명 방지
+            gradientEls.forEach(el => {
+                el.style.setProperty('-webkit-text-fill-color', '#059669', 'important');
+                el.style.setProperty('color', '#059669', 'important');
+            });
+
+            // 2) oklch/oklab 스타일 파싱 에러 우회를 위한 getComputedStyle Proxy 래핑
+            window.getComputedStyle = function(el, pseudoElt) {
+                const style = originalGetComputedStyle(el, pseudoElt);
+                return new Proxy(style, {
+                    get(target, prop) {
+                        if (prop === 'getPropertyValue') {
+                            return function(p) {
+                                const val = target.getPropertyValue(p);
+                                if (typeof val === 'string' && (val.includes('oklch') || val.includes('oklab'))) {
+                                    return val.replace(/(oklch|oklab)\([^)]+\)/g, 'rgb(200, 200, 200)');
+                                }
+                                return val;
+                            }
+                        }
+                        const val = target[prop];
+                        if (typeof val === 'string' && (val.includes('oklch') || val.includes('oklab'))) {
+                            return val.replace(/(oklch|oklab)\([^)]+\)/g, 'rgb(200, 200, 200)');
+                        }
+                        return typeof val === 'function' ? val.bind(target) : val;
+                    }
+                });
+            };
+
+            // html2canvas로 결과 영역 캡처
+            const canvas = await html2canvas(pdfRef.current, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#f8fafc',
+                windowWidth: pdfRef.current.scrollWidth,
+                windowHeight: pdfRef.current.scrollHeight
+            });
+
+            const imgData = canvas.toDataURL('image/jpeg', 0.95);
+            
+            // A4 크기 설정 및 여러 페이지 생성
+            const imgWidth = 190; // A4 (210mm) - 좌우 여백 (10mm * 2) = 190mm
+            const pageHeight = 297; // A4 297mm
+            const paddingY = 12; // 상하 여백 12mm
+            const contentHeight = pageHeight - (paddingY * 2); // 실제 콘텐츠 높이 273mm
+            
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            let heightLeft = imgHeight;
+
+            const doc = new jsPDF('p', 'mm', 'a4');
+            let position = paddingY;
+
+            // 첫 페이지 추가
+            doc.addImage(imgData, 'JPEG', 10, position, imgWidth, imgHeight);
+            heightLeft -= contentHeight;
+
+            // 여러 페이지일 경우 루프를 돌며 페이지 추가
+            while (heightLeft > 0) {
+                position = paddingY + heightLeft - imgHeight; // y좌표 이동 offset 계산
+                doc.addPage();
+                doc.addImage(imgData, 'JPEG', 10, position, imgWidth, imgHeight);
+                heightLeft -= contentHeight;
+            }
+
+            doc.save(fileName);
+            showToast(`PDF 저장 완료: ${fileName}`);
+        } catch (e) {
+            console.error('PDF Export Error:', e);
+            showToast('PDF 생성 중 오류가 발생했습니다.', 'error');
+        } finally {
+            // 3) 원복
+            window.getComputedStyle = originalGetComputedStyle;
+            gradientEls.forEach(el => {
+                el.style.removeProperty('-webkit-text-fill-color');
+                el.style.removeProperty('color');
+            });
+            setIsPdfLoading(false);
+        }
     };
 
     const handleExportExcel = () => {
@@ -318,10 +403,12 @@ export default function InterviewResultPanel({ initialCandidateId }) {
                                     </button>
                                     <button
                                         onClick={handleExportPdf}
-                                        className="bg-rose-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:-translate-y-0.5 transition-all shadow-md hover:shadow-lg"
+                                        disabled={isPdfLoading}
+                                        className="bg-rose-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:-translate-y-0.5 transition-all shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
                                     >
-                                        <FileText className="w-4 h-4" />
-                                        PDF 저장
+                                        {isPdfLoading
+                                            ? <><Loader2 className="w-4 h-4 animate-spin" /> PDF 생성 중...</>
+                                            : <><FileText className="w-4 h-4" /> PDF 저장</>}
                                     </button>
                                 </div>
                             </div>
@@ -332,7 +419,7 @@ export default function InterviewResultPanel({ initialCandidateId }) {
                                     <div className="flex flex-col items-center justify-center p-6 md:p-8 bg-gradient-to-b from-emerald-50 to-teal-50 rounded-2xl md:rounded-3xl border border-emerald-100 w-full lg:min-w-[200px] lg:w-auto">
                                         <Award className="w-8 h-8 md:w-10 md:h-10 text-emerald-500 mb-2" />
                                         <p className="text-xs md:text-sm font-semibold text-emerald-700 mb-1">AI 종합 점수</p>
-                                        <div className="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600">
+                                        <div className="pdf-score-text text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600">
                                             {resultData.ai_analysis.overallScore}
                                         </div>
                                         <div className="mt-4 px-4 py-1.5 bg-white rounded-full shadow-sm text-emerald-700 font-bold text-sm border border-emerald-100">

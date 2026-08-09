@@ -49,6 +49,7 @@ body {
 }
 
 /* ─── Print / PDF 저장 스타일 ─────────────────────────── */
+/* html2pdf.js 기반 PDF 저장이 주 방식. @media print는 보조 fallback */
 @media print {
   /* 사이드바, 헤더, 조회 필터 카드, 버튼 영역 숨김 */
   nav, aside, header,
@@ -57,19 +58,17 @@ body {
     display: none !important;
   }
 
-  /* 결과 영역 전체 너비로 확장 */
   body {
     background: white !important;
     font-size: 11pt;
   }
 
-  /* 페이지 여백 설정 */
   @page {
     margin: 15mm 12mm;
     size: A4 portrait;
   }
 
-  /* 카드 배경색 유지 */
+  /* 배경색 및 그라디언트 강제 출력 */
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
@@ -78,5 +77,11 @@ body {
   /* 카드가 페이지 경계에서 잘리지 않도록 */
   .bg-white, [class*="rounded"] {
     break-inside: avoid;
+  }
+
+  /* 그라디언트 점수 텍스트 — 인쇄 시 단색으로 fallback */
+  .pdf-score-text {
+    -webkit-text-fill-color: #059669 !important;
+    color: #059669 !important;
   }
 }
