@@ -9,19 +9,19 @@
 ## 작업 유형: feature
 ## 담당자: Antigravity
 ## 우선순위: Medium
-## 작업 상태: IN PROGRESS
+## 작업 상태: ✅ DONE — 병합·배포 완료 (PR #1, commit 8f461d5). 이후 TASK-002에서 window.print() 방식으로 전면 대체됨
 
 ## 작업 ID: TASK-002 (보완 및 모달 이식)
 ## 작업 유형: feature / refactor
 ## 담당자: Antigravity (계획) → Claude Code (구현)
 ## 우선순위: High
-## 작업 상태: 구현 완료 (Claude 리뷰 / Antigravity QA 대기)
+## 작업 상태: ✅ DONE — 병합·배포 완료 (PR #3, commit c37fccc). 배포 직후 모달 PDF 콘텐츠 유실 리그레션 발견 → TASK-003에서 수정
 
 ## 작업 ID: TASK-003 (PDF 인쇄 결과물 콘텐츠 유실 핫픽스 + 밀도 개선)
 ## 작업 유형: fix
 ## 담당자: 찰리(실물 PDF 확인·이슈 리포트) → Claude Code(원인 분석 및 구현)
 ## 우선순위: Critical
-## 작업 상태: 구현 완료, 실제 PDF로 자체 검증 완료 (병합·배포 대기)
+## 작업 상태: ✅ DONE — 병합·배포 완료 (PR #4, commit b70daae). 찰리 프로덕션 QA 확인 완료 (2026-08-09)
 
 ### 배경 및 목적
 TASK-002 배포 후 찰리가 실제로 저장한 PDF를 확인한 결과, 대시보드 결과 뷰어 모달에서

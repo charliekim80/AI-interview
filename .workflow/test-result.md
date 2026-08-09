@@ -45,6 +45,28 @@ Tailwind CSS v4 스타일시트 및 브라우저 계산 색상에 포함된 `okl
 
 ---
 
+## Task ID: TASK-002 / TASK-003 (PDF 저장 — window.print() 전환 + 콘텐츠 유실 핫픽스)
+## 테스트 일시: 2026-08-09
+## 테스트 환경: Render 프로덕션 (배포 후 실사용 환경)
+## 테스터: 찰리 (Product Owner)
+
+### 진행 경과 요약
+1. TASK-002(html2canvas/jsPDF → window.print() + Print CSS 전환)를 병합·배포
+2. 배포 직후 찰리가 실제로 저장한 PDF에서 대시보드 결과 뷰어 모달의 콘텐츠가
+   Question 1 도입부에서 잘리고 페이지마다 거의 동일한 내용이 반복되는 Critical
+   버그를 발견 → 이슈 리포트
+3. Claude Code가 원인(모달의 `fixed + max-h-[90vh] overflow-y-auto` 클리핑으로
+   인해 window.print()가 콘텐츠를 정상적으로 페이지에 풀어내지 못함)을 특정하고
+   TASK-003으로 수정, 답변:AI피드백 3:1 비율 적용, 인쇄 밀도 개선
+4. Claude Code가 puppeteer-core로 실제 PDF를 생성해 자체 검증(모달 3p→12p,
+   전체 콘텐츠 정상 출력, 배경 UI 노출 없음) 후 TASK-003 병합·배포
+5. **찰리가 배포된 프로덕션에서 직접 재현 테스트 후 정상 구현을 확인**
+
+### 최종 판정
+✅ QA PASSED — 찰리 확인: "테스트 결과 정상구현 되었음을 확인하였습니다."
+
+---
+
 ## 수동 테스트 체크리스트 (현재 기준)
 
 > Preview 환경이 준비되기 전까지 로컬에서 아래 시나리오를 테스트합니다.
