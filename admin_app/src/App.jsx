@@ -104,7 +104,7 @@ export default function App() {
     <div className="min-h-screen bg-slate-50 flex flex-col lg:flex-row" style={{ fontFamily: "'DM Sans', 'Inter', sans-serif" }}>
       
       {/* Mobile Header */}
-      <div className="lg:hidden flex items-center justify-between px-4 py-3 bg-slate-900 text-white sticky top-0 z-50">
+      <div className="no-print lg:hidden flex items-center justify-between px-4 py-3 bg-slate-900 text-white sticky top-0 z-50">
         <div className="flex items-center gap-2">
           <img src={`${import.meta.env.BASE_URL}TecAceAI.png`} alt="TecAce Logo" className="h-8 w-8 object-contain" />
           <span className="font-bold text-sm tracking-tight">TecAce AI</span>
@@ -224,7 +224,7 @@ export default function App() {
         </header>
 
         <main className="p-4 lg:p-8 min-h-screen">
-          <div className="lg:hidden mb-6">
+          <div className="no-print lg:hidden mb-6">
             <h2 className="text-xl font-bold text-slate-800">{sectionLabels[active]}</h2>
             <p className="text-sm text-slate-500 mt-0.5">{sectionDescriptions[active]}</p>
           </div>

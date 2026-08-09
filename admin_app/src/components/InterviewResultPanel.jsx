@@ -199,7 +199,7 @@ export default function InterviewResultPanel({ initialCandidateId }) {
             return (
                 <div key={i} className="print-card bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
                     {/* 카드 헤더 */}
-                    <div className={`border-b border-slate-100 p-5 flex items-start justify-between gap-4 ${isFollowUp ? 'bg-amber-50/60' : 'bg-slate-50'}`}>
+                    <div className={`print-qa-header border-b border-slate-100 p-5 flex items-start justify-between gap-4 ${isFollowUp ? 'bg-amber-50/60' : 'bg-slate-50'}`}>
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-2 flex-wrap">
                                 <span className={`inline-block px-3 py-1 font-bold text-xs rounded-lg shadow-sm border ${
@@ -227,7 +227,7 @@ export default function InterviewResultPanel({ initialCandidateId }) {
                         </div>
                     </div>
                     {/* 카드 바디 */}
-                    <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="print-qa-grid p-5 grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
                             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">지원자 답변</p>
                             <div className="print-answer-box bg-slate-50 p-4 rounded-xl text-slate-700 text-sm leading-relaxed whitespace-pre-wrap border border-slate-100">{a.answer || '답변 없음'}</div>
@@ -334,7 +334,7 @@ export default function InterviewResultPanel({ initialCandidateId }) {
                             </div>
 
                             {/* Summary Card */}
-                            <div className="print-card bg-white rounded-2xl md:rounded-3xl shadow-sm border border-slate-100 p-5 md:p-8">
+                            <div className="print-card print-summary-card bg-white rounded-2xl md:rounded-3xl shadow-sm border border-slate-100 p-5 md:p-8">
                                 <div className="flex flex-col lg:flex-row items-center lg:items-start gap-6 lg:gap-8">
                                     <div className="flex flex-col items-center justify-center p-6 md:p-8 bg-gradient-to-b from-emerald-50 to-teal-50 rounded-2xl md:rounded-3xl border border-emerald-100 w-full lg:min-w-[200px] lg:w-auto">
                                         <Award className="w-8 h-8 md:w-10 md:h-10 text-emerald-500 mb-2" />

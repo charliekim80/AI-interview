@@ -17,6 +17,40 @@
 ## 우선순위: High
 ## 작업 상태: 구현 완료 (Claude 리뷰 / Antigravity QA 대기)
 
+## 작업 ID: TASK-003 (PDF 인쇄 결과물 콘텐츠 유실 핫픽스 + 밀도 개선)
+## 작업 유형: fix
+## 담당자: 찰리(실물 PDF 확인·이슈 리포트) → Claude Code(원인 분석 및 구현)
+## 우선순위: Critical
+## 작업 상태: 구현 완료, 실제 PDF로 자체 검증 완료 (병합·배포 대기)
+
+### 배경 및 목적
+TASK-002 배포 후 찰리가 실제로 저장한 PDF를 확인한 결과, 대시보드 결과 뷰어 모달에서
+저장한 PDF가 Question 1 도입부에서 내용이 전부 잘리고, 3페이지 모두 거의 동일한
+내용이 반복되며, 대시보드 네브바/모바일 헤더/X버튼 등 인쇄되면 안 되는 UI가 배경에
+비쳐 보이는 심각한 버그가 발견됨. 원인은 모달이 `position: fixed` + `max-h-[90vh]
+overflow-y-auto`로 뷰포트에 클리핑되어 있어 `window.print()`가 내용을 정상적으로
+여러 페이지에 풀어내지 못하기 때문. 아울러 답변/AI피드백 영역 비율을 3:1로 조정하고
+전반적인 밀도를 높여 페이지 수를 줄이는 개선도 함께 진행.
+
+### 요구사항
+- [x] 모달(InterviewResult) 인쇄 시 전체 질문/답변이 잘리지 않고 모두 출력되도록 수정
+- [x] 인쇄 시 대시보드 네브바/모바일 헤더/X버튼/배경 오버레이가 노출되지 않도록 수정
+- [x] 답변 : AI피드백 영역을 3:1 비율로 고정 (Tailwind md: 브레이크포인트에 의존하지 않도록)
+- [x] 카드 패딩/마진/폰트 축소로 인쇄 밀도 향상
+- [x] 독립 페이지(InterviewResultPanel)와 모달(InterviewResult) 양쪽 모두 실제 PDF 파일로 직접 검증
+
+### 영향 범위
+- 변경 파일: admin_app/src/App.jsx, admin_app/src/components/Dashboard.jsx, admin_app/src/components/InterviewResult.jsx, admin_app/src/components/InterviewResultPanel.jsx, admin_app/src/index.css
+- DB 변경: 없음
+- API 변경: 없음
+
+### 주의사항
+- client_app/ 수정 금지
+- server/ 수정 금지
+- 기존 Excel 다운로드 기능 건드리지 말 것
+- ⚠️ TASK-002가 이미 main에 병합·배포되어 있어, 이 버그가 수정되기 전까지는
+  **현재 프로덕션에서 모달 뷰어로 저장하는 PDF가 실제로 깨져 있는 상태**임
+
 ### 배경 및 목적
 html2canvas 이미지 캡처 방식의 텍스트 복사 불가능 문제 및 페이지 잘림 문제를 해결하기 위해, 
 정교한 Print CSS 튜닝과 window.print() 우회 파일명 지정을 적용한 텍스트 기반 PDF 출력 방식으로 전환. 
