@@ -11,23 +11,32 @@
 ## 우선순위: Medium
 ## 작업 상태: IN PROGRESS
 
+## 작업 ID: TASK-002 (보완 및 모달 이식)
+## 작업 유형: feature / refactor
+## 담당자: Antigravity (계획) → Claude Code (구현)
+## 우선순위: High
+## 작업 상태: 구현 완료 (Claude 리뷰 / Antigravity QA 대기)
+
 ### 배경 및 목적
-Interview Result 화면에 PDF 저장 버튼이 이미 존재하나 `window.print()` 방식으로
-인쇄 다이얼로그가 뜨는 문제가 있음. html2pdf.js 라이브러리를 도입하여
-버튼 클릭 시 PDF가 즉시 다운로드 되도록 개선.
+html2canvas 이미지 캡처 방식의 텍스트 복사 불가능 문제 및 페이지 잘림 문제를 해결하기 위해, 
+정교한 Print CSS 튜닝과 window.print() 우회 파일명 지정을 적용한 텍스트 기반 PDF 출력 방식으로 전환. 
+대시보드 모달 결과뷰어(InterviewResult.jsx)와 독립 페이지(InterviewResultPanel.jsx) 모두 적용.
 
 ### 요구사항
-- [ ] 버튼 클릭 → PDF 즉시 다운로드 (인쇄 다이얼로그 없음)
-- [ ] 파일명: {지원자이름}_AI면접분석_{날짜}.pdf
-- [ ] A4 세로, 여백 적절히 설정
-- [ ] 배경색/그라디언트 유지
-- [ ] PDF 생성 중 로딩 상태 표시
-- [ ] 희망연봉 포함 체크박스 반영
+- [x] jspdf / html2canvas 라이브러리 제거 및 번들 용량 축소
+- [x] window.print() 기반 파일명 임시 우회 적용 (`지원자_AI면접분석_날짜.pdf`)
+- [x] 질문별 카드에 break-inside: avoid; 및 .print-card 클래스 부여하여 페이지 끊김 해결
+- [x] 인쇄물 가독성을 극대화한 글로벌 Print CSS 스타일 튜닝
+- [x] 텍스트 복사(드래그) 100% 지원 여부 확인 (html2canvas 이미지 캡처 완전 제거로 구조적으로 보장됨)
 
 ### 영향 범위
-- 변경 파일: admin_app/package.json, admin_app/src/components/InterviewResultPanel.jsx, admin_app/src/index.css
+- 변경 파일: admin_app/package.json, admin_app/package-lock.json, admin_app/src/components/InterviewResultPanel.jsx, admin_app/src/components/InterviewResult.jsx, admin_app/src/index.css
 - DB 변경: 없음
 - API 변경: 없음
+
+### 주의사항
+- client_app/ 수정 금지
+- server/ 수정 금지
 
 ### 주의사항
 - client_app/ 수정 금지

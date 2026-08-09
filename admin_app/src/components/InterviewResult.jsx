@@ -1,13 +1,9 @@
-import { useState, useRef } from 'react';
-import { Download, ChevronLeft, Award, FileSpreadsheet, CheckCircle2, FileText, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { Download, ChevronLeft, Award, FileSpreadsheet, CheckCircle2, FileText } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
 
 export default function InterviewResult({ candidate, resultData, onBack }) {
     const [includeQ7, setIncludeQ7] = useState(true);
-    const [isPdfLoading, setIsPdfLoading] = useState(false);
-    const pdfRef = useRef(null);
 
     if (!resultData || !resultData.ai_analysis) {
         return (
@@ -20,96 +16,25 @@ export default function InterviewResult({ candidate, resultData, onBack }) {
 
     const { overallScore, recommendation, summary, strengths = [], improvements = [], answerAnalysis = [] } = resultData.ai_analysis;
 
-    const handleExportPdf = async () => {
-        if (!candidate || !pdfRef.current) {
+    const handleExportPdf = () => {
+        if (!candidate) {
             return;
         }
 
         const kstToday = new Intl.DateTimeFormat('ko-KR', {
             year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'Asia/Seoul'
         }).format(new Date()).replace(/\. /g, '-').replace(/\.$/, '');
-        const fileName = `${candidate.name}_AI면접분석_${kstToday}.pdf`;
+        const fileName = `${candidate.name}_AI면접분석_${kstToday}`;
 
-        setIsPdfLoading(true);
-        const gradientEls = pdfRef.current.querySelectorAll('.pdf-score-text');
-        const originalGetComputedStyle = window.getComputedStyle;
+        const originalTitle = document.title;
+        document.title = fileName;
 
         try {
-            // 1) 그라디언트 텍스트 투명 방지
-            gradientEls.forEach(el => {
-                el.style.setProperty('-webkit-text-fill-color', '#059669', 'important');
-                el.style.setProperty('color', '#059669', 'important');
-            });
-
-            // 2) oklch/oklab 스타일 파싱 에러 우회를 위한 getComputedStyle Proxy 래핑
-            window.getComputedStyle = function(el, pseudoElt) {
-                const style = originalGetComputedStyle(el, pseudoElt);
-                return new Proxy(style, {
-                    get(target, prop) {
-                        if (prop === 'getPropertyValue') {
-                            return function(p) {
-                                const val = target.getPropertyValue(p);
-                                if (typeof val === 'string' && (val.includes('oklch') || val.includes('oklab'))) {
-                                    return val.replace(/(oklch|oklab)\([^)]+\)/g, 'rgb(200, 200, 200)');
-                                }
-                                return val;
-                            }
-                        }
-                        const val = target[prop];
-                        if (typeof val === 'string' && (val.includes('oklch') || val.includes('oklab'))) {
-                            return val.replace(/(oklch|oklab)\([^)]+\)/g, 'rgb(200, 200, 200)');
-                        }
-                        return typeof val === 'function' ? val.bind(target) : val;
-                    }
-                });
-            };
-
-            // html2canvas로 결과 영역 캡처
-            const canvas = await html2canvas(pdfRef.current, {
-                scale: 2,
-                useCORS: true,
-                logging: false,
-                backgroundColor: '#f8fafc',
-                windowWidth: pdfRef.current.scrollWidth,
-                windowHeight: pdfRef.current.scrollHeight
-            });
-
-            const imgData = canvas.toDataURL('image/jpeg', 0.95);
-            
-            // A4 크기 설정 및 여러 페이지 생성
-            const imgWidth = 190; // A4 (210mm) - 좌우 여백 (10mm * 2) = 190mm
-            const pageHeight = 297; // A4 297mm
-            const paddingY = 12; // 상하 여백 12mm
-            const contentHeight = pageHeight - (paddingY * 2); // 실제 콘텐츠 높이 273mm
-            
-            const imgHeight = (canvas.height * imgWidth) / canvas.width;
-            let heightLeft = imgHeight;
-
-            const doc = new jsPDF('p', 'mm', 'a4');
-            let position = paddingY;
-
-            // 첫 페이지 추가
-            doc.addImage(imgData, 'JPEG', 10, position, imgWidth, imgHeight);
-            heightLeft -= contentHeight;
-
-            // 여러 페이지일 경우 루프를 돌며 페이지 추가
-            while (heightLeft > 0) {
-                position = paddingY + heightLeft - imgHeight; // y좌표 이동 offset 계산
-                doc.addPage();
-                doc.addImage(imgData, 'JPEG', 10, position, imgWidth, imgHeight);
-                heightLeft -= contentHeight;
-            }
-
-            doc.save(fileName);
+            window.print();
         } catch (e) {
             console.error('PDF Export Error:', e);
         } finally {
-            window.getComputedStyle = originalGetComputedStyle;
-            gradientEls.forEach(el => {
-                el.style.removeProperty('-webkit-text-fill-color');
-                el.style.removeProperty('color');
-            });
-            setIsPdfLoading(false);
+            document.title = originalTitle;
         }
     };
 
@@ -171,7 +96,7 @@ export default function InterviewResult({ candidate, resultData, onBack }) {
     };
 
     return (
-        <div ref={pdfRef} className="space-y-6 max-w-5xl mx-auto pb-12">
+        <div className="space-y-6 max-w-5xl mx-auto pb-12">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-slate-200 pb-6">
                 <div className="flex items-center gap-4">
@@ -195,20 +120,15 @@ export default function InterviewResult({ candidate, resultData, onBack }) {
                     </button>
                     <button
                         onClick={handleExportPdf}
-                        disabled={isPdfLoading}
-                        className="bg-rose-600 text-white px-5 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 hover:-translate-y-0.5 transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="bg-rose-600 text-white px-5 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 hover:-translate-y-0.5 transition-all shadow-sm"
                     >
-                        {isPdfLoading ? (
-                            <><Loader2 className="w-4 h-4 animate-spin" /> PDF 생성 중...</>
-                        ) : (
-                            <><FileText className="w-4 h-4" /> PDF 저장</>
-                        )}
+                        <FileText className="w-4 h-4" /> PDF 저장
                     </button>
                 </div>
             </div>
 
             {/* Summary Board */}
-            <div className="bg-white rounded-2xl md:rounded-3xl shadow-sm border border-slate-100 p-5 md:p-8">
+            <div className="print-card bg-white rounded-2xl md:rounded-3xl shadow-sm border border-slate-100 p-5 md:p-8">
                 <div className="flex flex-col lg:flex-row items-center lg:items-start gap-6 lg:gap-8">
                     {/* Score Circle */}
                     <div className="flex flex-col items-center justify-center p-6 md:p-8 bg-gradient-to-b from-emerald-50 to-teal-50 rounded-2xl md:rounded-3xl border border-emerald-100 w-full lg:min-w-[200px] lg:w-auto">
@@ -276,7 +196,7 @@ export default function InterviewResult({ candidate, resultData, onBack }) {
                             }
 
                             return (
-                                <div key={i} className={`bg-white rounded-2xl shadow-sm border overflow-hidden ${a.isFollowUp ? 'ml-8 border-l-4 border-l-blue-400 border-slate-100' : 'border-slate-100'}`}>
+                                <div key={i} className={`print-card bg-white rounded-2xl shadow-sm border overflow-hidden ${a.isFollowUp ? 'ml-8 border-l-4 border-l-blue-400 border-slate-100' : 'border-slate-100'}`}>
                                     <div className={`${a.isFollowUp ? 'bg-blue-50/30' : 'bg-slate-50'} border-b border-slate-100 p-5 flex items-start justify-between gap-4`}>
                                         <div>
                                             {a.isFollowUp ? (
@@ -298,13 +218,13 @@ export default function InterviewResult({ candidate, resultData, onBack }) {
                                     <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-5">
                                         <div>
                                             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">지원자 답변</p>
-                                            <div className="bg-slate-50 p-4 rounded-xl text-slate-700 text-sm leading-relaxed whitespace-pre-wrap border border-slate-100">
+                                            <div className="print-answer-box bg-slate-50 p-4 rounded-xl text-slate-700 text-sm leading-relaxed whitespace-pre-wrap border border-slate-100">
                                                 {a.answer || '답변 없음'}
                                             </div>
                                         </div>
                                         <div>
                                             <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-2">AI 피드백</p>
-                                            <div className={`${a.isFollowUp ? 'bg-blue-50/50 border-blue-100 text-blue-800' : 'bg-emerald-50/50 border-emerald-100 text-emerald-800'} p-4 rounded-xl text-sm leading-relaxed whitespace-pre-wrap border`}>
+                                            <div className={`print-feedback-box ${a.isFollowUp ? 'bg-blue-50/50 border-blue-100 text-blue-800' : 'bg-emerald-50/50 border-emerald-100 text-emerald-800'} p-4 rounded-xl text-sm leading-relaxed whitespace-pre-wrap border`}>
                                                 {a.feedback}
                                             </div>
                                         </div>
