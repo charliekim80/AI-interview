@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { FileSpreadsheet, FileText, ChevronDown, Award, CheckCircle2, Loader2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import html2pdf from 'html2pdf.js';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import api from '../api/client';
 
 export default function InterviewResultPanel({ initialCandidateId }) {
@@ -117,38 +118,87 @@ export default function InterviewResultPanel({ initialCandidateId }) {
         }).format(new Date()).replace(/\. /g, '-').replace(/\.$/, '');
         const fileName = `${candidateInfo.name}_AI면접분석_${kstToday}.pdf`;
 
-        // 그라디언트 텍스트(bg-clip-text) → PDF 캡처 시 투명해지는 문제 방지
-        const gradientEls = pdfRef.current.querySelectorAll('.pdf-score-text');
-        gradientEls.forEach(el => {
-            el.style.webkitTextFillColor = '#059669';
-            el.style.color = '#059669';
-        });
-
         setIsPdfLoading(true);
+        const gradientEls = pdfRef.current.querySelectorAll('.pdf-score-text');
+        const originalGetComputedStyle = window.getComputedStyle;
+
         try {
-            const opt = {
-                margin:      [12, 10, 12, 10],
-                filename:    fileName,
-                image:       { type: 'jpeg', quality: 0.97 },
-                html2canvas: {
-                    scale: 2,
-                    useCORS: true,
-                    logging: false,
-                    backgroundColor: '#f8fafc',
-                },
-                jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                pagebreak:   { mode: ['avoid-all', 'css', 'legacy'] },
+            // 1) 그라디언트 텍스트 투명 방지
+            gradientEls.forEach(el => {
+                el.style.setProperty('-webkit-text-fill-color', '#059669', 'important');
+                el.style.setProperty('color', '#059669', 'important');
+            });
+
+            // 2) oklch/oklab 스타일 파싱 에러 우회를 위한 getComputedStyle Proxy 래핑
+            window.getComputedStyle = function(el, pseudoElt) {
+                const style = originalGetComputedStyle(el, pseudoElt);
+                return new Proxy(style, {
+                    get(target, prop) {
+                        if (prop === 'getPropertyValue') {
+                            return function(p) {
+                                const val = target.getPropertyValue(p);
+                                if (typeof val === 'string' && (val.includes('oklch') || val.includes('oklab'))) {
+                                    return val.replace(/(oklch|oklab)\([^)]+\)/g, 'rgb(200, 200, 200)');
+                                }
+                                return val;
+                            }
+                        }
+                        const val = target[prop];
+                        if (typeof val === 'string' && (val.includes('oklch') || val.includes('oklab'))) {
+                            return val.replace(/(oklch|oklab)\([^)]+\)/g, 'rgb(200, 200, 200)');
+                        }
+                        return typeof val === 'function' ? val.bind(target) : val;
+                    }
+                });
             };
-            await html2pdf().set(opt).from(pdfRef.current).save();
+
+            // html2canvas로 결과 영역 캡처
+            const canvas = await html2canvas(pdfRef.current, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#f8fafc',
+                windowWidth: pdfRef.current.scrollWidth,
+                windowHeight: pdfRef.current.scrollHeight
+            });
+
+            const imgData = canvas.toDataURL('image/jpeg', 0.95);
+            
+            // A4 크기 설정 및 여러 페이지 생성
+            const imgWidth = 190; // A4 (210mm) - 좌우 여백 (10mm * 2) = 190mm
+            const pageHeight = 297; // A4 297mm
+            const paddingY = 12; // 상하 여백 12mm
+            const contentHeight = pageHeight - (paddingY * 2); // 실제 콘텐츠 높이 273mm
+            
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            let heightLeft = imgHeight;
+
+            const doc = new jsPDF('p', 'mm', 'a4');
+            let position = paddingY;
+
+            // 첫 페이지 추가
+            doc.addImage(imgData, 'JPEG', 10, position, imgWidth, imgHeight);
+            heightLeft -= contentHeight;
+
+            // 여러 페이지일 경우 루프를 돌며 페이지 추가
+            while (heightLeft > 0) {
+                position = paddingY + heightLeft - imgHeight; // y좌표 이동 offset 계산
+                doc.addPage();
+                doc.addImage(imgData, 'JPEG', 10, position, imgWidth, imgHeight);
+                heightLeft -= contentHeight;
+            }
+
+            doc.save(fileName);
             showToast(`PDF 저장 완료: ${fileName}`);
         } catch (e) {
             console.error('PDF Export Error:', e);
             showToast('PDF 생성 중 오류가 발생했습니다.', 'error');
         } finally {
-            // 그라디언트 복원
+            // 3) 원복
+            window.getComputedStyle = originalGetComputedStyle;
             gradientEls.forEach(el => {
-                el.style.webkitTextFillColor = '';
-                el.style.color = '';
+                el.style.removeProperty('-webkit-text-fill-color');
+                el.style.removeProperty('color');
             });
             setIsPdfLoading(false);
         }
