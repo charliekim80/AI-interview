@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import {
     Users, CheckCircle2, PlayCircle, Search,
-    Plus, Copy, Check, Eye, Award, Trash2, Filter, FileText, ChevronDown, UserX, Clock, X
+    Plus, Copy, Check, Eye, Award, Trash2, Filter, FileText, ChevronDown, UserX, Clock, X, Edit3
 } from 'lucide-react';
 import api from '../api/client';
 import InterviewResult from './InterviewResult';
+import EditQuestionsModal from './EditQuestionsModal';
 
 const statusConfig = {
     'Registered': { color: 'bg-slate-100 text-slate-600 border-slate-200', label: '등록됨' },
@@ -32,6 +33,9 @@ export default function Dashboard({ onNavigate }) {
     const [modalCandidate, setModalCandidate] = useState(null);
     const [modalResultData, setModalResultData] = useState(null);
     const [modalLoading, setModalLoading] = useState(false);
+
+    // Edit Questions Modal state (아직 응시 전인 Invited 지원자만 대상)
+    const [editCandidate, setEditCandidate] = useState(null);
 
     const [uniqueCategories, setUniqueCategories] = useState([]);
     const [uniqueJobs, setUniqueJobs] = useState([]);
@@ -287,6 +291,15 @@ export default function Dashboard({ onNavigate }) {
                 </div>
             )}
 
+            {/* Edit Questions Modal */}
+            {editCandidate && (
+                <EditQuestionsModal
+                    candidate={editCandidate}
+                    onClose={() => setEditCandidate(null)}
+                    onSaved={fetchData}
+                />
+            )}
+
             <div className={modalCandidate ? 'no-print' : ''}>
             {/* Stats */}
             <div className="grid grid-cols-4 gap-6">
@@ -474,6 +487,14 @@ export default function Dashboard({ onNavigate }) {
                                                     <Award className="w-4 h-4 text-emerald-600" />
                                                     <span className="text-emerald-700 font-black text-sm">{c.ai_score}</span>
                                                 </div>
+                                            ) : c.status === 'Invited' ? (
+                                                <button
+                                                    onClick={() => setEditCandidate(c)}
+                                                    className="flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-white bg-blue-50 hover:bg-blue-600 px-3 py-2 rounded-lg transition-colors border border-blue-100 hover:border-blue-600 w-fit"
+                                                    title="인터뷰 진행 전까지 질문을 수정할 수 있습니다"
+                                                >
+                                                    <Edit3 className="w-3.5 h-3.5" /> 질문수정
+                                                </button>
                                             ) : (
                                                 <span className="text-slate-300 text-sm font-medium">—</span>
                                             )}

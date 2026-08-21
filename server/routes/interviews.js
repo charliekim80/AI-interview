@@ -61,6 +61,11 @@ router.get('/candidate/:id', async (req, res) => {
         if (!iRows || iRows.length === 0) return res.status(404).json({ error: '면접 세션이 없습니다.' });
         
         const row = iRows[0];
+
+        const host = req.get('host');
+        const protocol = req.protocol;
+        const baseUrl = process.env.FRONTEND_URL || `${protocol}://${host}`;
+
         res.json({
             ...row,
             candidate_name: row.candidates?.name,
@@ -186,6 +191,34 @@ router.get('/:token/result', async (req, res) => {
             ai_analysis: row.ai_analysis ? JSON.parse(row.ai_analysis) : null,
             candidates: undefined
         });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// PUT /api/interviews/:token/questions - 면접 질문 수정 (지원자가 아직 응시하지 않은 Pending 상태에서만 허용)
+router.put('/:token/questions', async (req, res) => {
+    const { confirmed_questions } = req.body;
+    if (!Array.isArray(confirmed_questions) || confirmed_questions.length === 0) {
+        return res.status(400).json({ error: '1개 이상의 confirmed_questions가 필요합니다.' });
+    }
+    try {
+        const supabase = await getSupabase();
+        const { data: row, error } = await supabase.from('interviews').select('status').eq('token', req.params.token).maybeSingle();
+        if (error) throw error;
+        if (!row) return res.status(404).json({ error: '면접 세션을 찾을 수 없습니다.' });
+
+        // 지원자가 이미 응시(Completed)했거나 만료(Expired)된 세션은 수정 불가 — 서버가 최종적으로 강제
+        if (row.status !== 'Pending') {
+            return res.status(409).json({ error: '이미 지원자가 응시했거나 만료된 면접은 질문을 수정할 수 없습니다.' });
+        }
+
+        const { data: updated, error: updateErr } = await supabase.from('interviews')
+            .update({ confirmed_questions: JSON.stringify(confirmed_questions) })
+            .eq('token', req.params.token)
+            .select()
+            .single();
+        if (updateErr) throw updateErr;
+
+        res.json({ success: true, confirmed_questions: JSON.parse(updated.confirmed_questions || '[]') });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
