@@ -1,6 +1,34 @@
 import { useState } from 'react';
-import { Download, ChevronLeft, Award, FileSpreadsheet, CheckCircle2, FileText } from 'lucide-react';
+import { Download, ChevronLeft, Award, FileSpreadsheet, CheckCircle2, FileText, ChevronDown } from 'lucide-react';
 import * as XLSX from 'xlsx';
+
+// 답변 요약을 기본으로 보여주고, 필요할 때만 원문 전체를 펼쳐보는 박스
+function AnswerBox({ summary, fullAnswer }) {
+    const [expanded, setExpanded] = useState(false);
+    const hasFullText = fullAnswer && fullAnswer.trim() && fullAnswer !== summary;
+
+    return (
+        <div className="print-answer-box bg-slate-50 p-4 rounded-xl text-slate-700 text-sm leading-relaxed whitespace-pre-wrap border border-slate-100">
+            <p>{summary || fullAnswer || '답변 없음'}</p>
+            {hasFullText && (
+                <>
+                    <button
+                        onClick={() => setExpanded(v => !v)}
+                        className="no-print mt-2 flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700"
+                    >
+                        <ChevronDown className={`w-3.5 h-3.5 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+                        {expanded ? '요약만 보기' : '전체 답변 보기'}
+                    </button>
+                    {expanded && (
+                        <div className="mt-2 pt-2 border-t border-slate-200 text-slate-600">
+                            {fullAnswer}
+                        </div>
+                    )}
+                </>
+            )}
+        </div>
+    );
+}
 
 export default function InterviewResult({ candidate, resultData, onBack }) {
     const [includeQ7, setIncludeQ7] = useState(true);
@@ -58,7 +86,7 @@ export default function InterviewResult({ candidate, resultData, onBack }) {
 
         // 답변 분석 시트
         const qnaData = [
-            ['문항 번호', '질문 내용', '지원자 답변', 'AI 평가 (피드백)', '부분 점수']
+            ['문항 번호', '질문 내용', '답변 요약', '지원자 답변(원문)', 'AI 평가 (피드백)', '부분 점수']
         ];
 
         let exportQNumber = 0;
@@ -68,13 +96,14 @@ export default function InterviewResult({ candidate, resultData, onBack }) {
                 exportQNumber++;
             }
 
-            const questionLabel = a.isFollowUp 
-                ? `↳ Q${exportQNumber} 꼬리질문` 
+            const questionLabel = a.isFollowUp
+                ? `↳ Q${exportQNumber} 꼬리질문`
                 : `Q${exportQNumber}`;
 
             qnaData.push([
                 questionLabel,
                 a.question,
+                a.answerSummary || '',
                 a.answer,
                 a.feedback,
                 a.score
@@ -87,7 +116,7 @@ export default function InterviewResult({ candidate, resultData, onBack }) {
 
         // 컬럼 너비 설정
         wsInfo['!cols'] = [{ wch: 15 }, { wch: 80 }];
-        wsQnA['!cols'] = [{ wch: 10 }, { wch: 40 }, { wch: 50 }, { wch: 50 }, { wch: 10 }];
+        wsQnA['!cols'] = [{ wch: 10 }, { wch: 40 }, { wch: 45 }, { wch: 50 }, { wch: 50 }, { wch: 10 }];
 
         XLSX.utils.book_append_sheet(wb, wsInfo, "면접 종합 결과");
         XLSX.utils.book_append_sheet(wb, wsQnA, "질문별 상세 분석");
@@ -218,9 +247,7 @@ export default function InterviewResult({ candidate, resultData, onBack }) {
                                     <div className="print-qa-grid p-5 grid grid-cols-1 md:grid-cols-2 gap-5">
                                         <div>
                                             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">지원자 답변</p>
-                                            <div className="print-answer-box bg-slate-50 p-4 rounded-xl text-slate-700 text-sm leading-relaxed whitespace-pre-wrap border border-slate-100">
-                                                {a.answer || '답변 없음'}
-                                            </div>
+                                            <AnswerBox summary={a.answerSummary} fullAnswer={a.answer} />
                                         </div>
                                         <div>
                                             <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-2">AI 피드백</p>

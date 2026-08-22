@@ -160,7 +160,7 @@ body {
      붕괴할 수 있어, 인쇄 전용 그리드로 명시적으로 덮어쓴다. */
   .print-qa-grid {
     display: grid !important;
-    grid-template-columns: 3fr 1fr !important;
+    grid-template-columns: 5fr 2fr !important;
     gap: 8px !important;
     padding: 6px 10px !important;
   }

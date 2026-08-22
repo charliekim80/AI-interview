@@ -245,14 +245,21 @@ async function analyzeAnswers(candidate, job, questions, answers) {
             strengths: ['성실한 답변 태도', '직무 관련 경험 보유'],
             improvements: ['더 구체적인 사례 제시 권장'],
             recommendation: 'Review',
-            answerAnalysis: answers.map((a, i) => ({
-                question: a.question || (typeof questions[a.questionIndex] === 'string' ? questions[a.questionIndex] : questions[a.questionIndex]?.text) || '질문 없음',
-                answer: a.answer || '',
-                score: (a.answer && a.answer !== '인터뷰 거절') ? 70 : 10,
-                feedback: '답변이 접수되었습니다.',
-                isFollowUp: a.isFollowUp || false,
-                parentQuestion: a.isFollowUp ? (answers.find(prev => !prev.isFollowUp && prev.questionIndex === a.questionIndex)?.question || null) : null
-            }))
+            answerAnalysis: answers.map((a, i) => {
+                const hasAnswer = a.answer && a.answer !== '인터뷰 거절';
+                const summary = hasAnswer
+                    ? (a.answer.length > 80 ? `${a.answer.slice(0, 80)}...` : a.answer)
+                    : '답변 없음';
+                return {
+                    question: a.question || (typeof questions[a.questionIndex] === 'string' ? questions[a.questionIndex] : questions[a.questionIndex]?.text) || '질문 없음',
+                    answer: a.answer || '',
+                    score: hasAnswer ? 70 : 10,
+                    answerSummary: summary, // Mock 모드는 실제 AI 요약이 아닌 답변 앞부분만 잘라 임시로 채움
+                    feedback: '답변이 접수되었습니다. OpenAI API Key 설정 후 근거가 포함된 상세 피드백을 받을 수 있습니다.',
+                    isFollowUp: a.isFollowUp || false,
+                    parentQuestion: a.isFollowUp ? (answers.find(prev => !prev.isFollowUp && prev.questionIndex === a.questionIndex)?.question || null) : null
+                };
+            })
         };
     }
 
@@ -268,13 +275,16 @@ async function analyzeAnswers(candidate, job, questions, answers) {
     const prompt = `당신은 대한민국 최고의 HR 전문 분석가입니다. 아래 면접 내용을 정밀 분석하여 리포트를 작성하세요.
 
 [분석 지침]
-2. **점수 산정 기준 (STRICT)**: 
+1. **근거 기반 분석**: 모든 평가는 반드시 답변에 실제로 등장한 구체적 근거(기술명·수치·사례·상황)에 기반하세요. 근거 없이 점수만 매기지 마세요.
+2. **점수 산정 기준 (STRICT)**:
    - 답변이 없거나 '인터뷰 거절'인 경우: **무조건 10점** 부여.
    - 의미 있는 답변이 있는 경우: **최소 30점 ~ 최대 100점** 사이에서 평가.
    - 종합 점수(\`overallScore\`)는 개별 답변 점수의 가중 평균을 바탕으로 산출하되, 답변이 하나라도 있으면 최소 30점 이상(모두 없으면 10점)이 되도록 논리적으로 구성하세요.
-3. **빈 답변 절대 누락 금지**: '답변 없음', '인터뷰 거절' 등 유효하지 않은 답변이더라도 해당 ID를 분석 결과에서 **절대 누락시키지 마세요**. 
+3. **빈 답변 절대 누락 금지**: '답변 없음', '인터뷰 거절' 등 유효하지 않은 답변이더라도 해당 ID를 분석 결과에서 **절대 누락시키지 마세요**.
 4. **질문 원문 유지**: \`answerAnalysis\` 내의 \`question\` 필드는 반드시 제공된 질문 텍스트를 그대로 유지하세요.
 5. **직무 적합성 평가**: ${job.title} 직무의 JD를 기준으로 평가하세요.
+6. **답변 요약(answerSummary)**: 지원자 답변 원문을 2문장 이내로 핵심만 요약하세요. 답변이 없거나 '인터뷰 거절'이면 "답변 없음"이라고만 작성하세요.
+7. **피드백 근거 명시(feedback)**: 점수만 매기지 말고, 답변에 실제로 등장한 구체적 내용(기술명·수치·사례·상황) 최소 1개 이상을 인용하거나 근거로 삼아 왜 이 점수인지 설명하세요. "성실한 답변입니다" 같은 일반적 문구는 금지하며, 근거를 포함하되 2~3문장 이내로 간결하게 작성하세요.
 
 [입력 데이터]
 직무: ${job.title}
@@ -294,7 +304,8 @@ ${qaText}
     {
       "id": "q_0", // 데이터에 부여된 고유 ID
       "score": 0~100,
-      "feedback": "상세 피드백 (무의미할 경우 사유 명시)"
+      "answerSummary": "지원자 답변을 2문장으로 요약 (답변 없으면 '답변 없음')",
+      "feedback": "구체적 근거를 인용한 상세 피드백, 2~3문장 (무의미할 경우 사유 명시)"
     }
   ]
 }`;
@@ -306,7 +317,7 @@ ${qaText}
             model: 'gpt-4o-mini',
             messages: [{ role: 'user', content: prompt }],
             temperature: 0.3,
-            max_tokens: 2000,
+            max_tokens: 3500, // answerSummary 필드 추가 + feedback 근거 인용으로 문항당 응답 길이가 늘어나 상향 (기존 2000)
         });
         const content = completion.choices[0].message.content.trim();
         const m = content.match(/\{[\s\S]*\}/);
@@ -332,6 +343,7 @@ ${qaText}
                     question: ans.question, // 항상 신뢰도가 100%인 원본 데이터 우선
                     answer: ans.answer || '(답변 없음)', // AI 튜닝 제거, 원본 답변 그대로 유지 (데이터 유실 방지)
                     score: aiItem.score || (hasAnswer ? 30 : 10),
+                    answerSummary: aiItem.answerSummary || (hasAnswer ? '요약을 생성하지 못했습니다.' : '답변이 제출되지 않았습니다.'),
                     feedback: aiItem.feedback || (hasAnswer ? '분석 결과를 생성하지 못했습니다.' : '답변이 제공되지 않아 10점으로 처리되었습니다.'),
                     isFollowUp: isFollowUp,
                     parentQuestion: parentQuestion

@@ -3,6 +3,34 @@ import { FileSpreadsheet, FileText, ChevronDown, Award, CheckCircle2, Loader2 } 
 import * as XLSX from 'xlsx';
 import api from '../api/client';
 
+// 답변 요약을 기본으로 보여주고, 필요할 때만 원문 전체를 펼쳐보는 박스
+function AnswerBox({ summary, fullAnswer }) {
+    const [expanded, setExpanded] = useState(false);
+    const hasFullText = fullAnswer && fullAnswer.trim() && fullAnswer !== summary;
+
+    return (
+        <div className="print-answer-box bg-slate-50 p-4 rounded-xl text-slate-700 text-sm leading-relaxed whitespace-pre-wrap border border-slate-100">
+            <p>{summary || fullAnswer || '답변 없음'}</p>
+            {hasFullText && (
+                <>
+                    <button
+                        onClick={() => setExpanded(v => !v)}
+                        className="no-print mt-2 flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700"
+                    >
+                        <ChevronDown className={`w-3.5 h-3.5 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+                        {expanded ? '요약만 보기' : '전체 답변 보기'}
+                    </button>
+                    {expanded && (
+                        <div className="mt-2 pt-2 border-t border-slate-200 text-slate-600">
+                            {fullAnswer}
+                        </div>
+                    )}
+                </>
+            )}
+        </div>
+    );
+}
+
 export default function InterviewResultPanel({ initialCandidateId }) {
     const [jobs, setJobs] = useState([]);
     const [candidates, setCandidates] = useState([]);
@@ -155,11 +183,11 @@ export default function InterviewResultPanel({ initialCandidateId }) {
         ];
 
         const qnaLabels = buildQuestionLabels(exportAnswers);
-        const qnaData = [['번호', '유형', '질문 내용', '지원자 답변', 'AI 상세 평가 (피드백)', '부분 점수']];
+        const qnaData = [['번호', '유형', '질문 내용', '답변 요약', '지원자 답변(원문)', 'AI 상세 평가 (피드백)', '부분 점수']];
         exportAnswers.forEach((a, index) => {
             const label = qnaLabels[index] || `Q${index + 1}`;
             const type = a.isFollowUp ? '🔗 심층질문' : '일반';
-            qnaData.push([label, type, a.question, a.answer || '(답변 없음)', a.feedback, a.score]);
+            qnaData.push([label, type, a.question, a.answerSummary || '', a.answer || '(답변 없음)', a.feedback, a.score]);
         });
 
         try {
@@ -171,7 +199,7 @@ export default function InterviewResultPanel({ initialCandidateId }) {
             ];
             const wsCombined = XLSX.utils.aoa_to_sheet(combinedData);
             wsCombined['!cols'] = [
-                { wch: 10 }, { wch: 12 }, { wch: 55 }, { wch: 55 }, { wch: 75 }, { wch: 10 }
+                { wch: 10 }, { wch: 12 }, { wch: 55 }, { wch: 45 }, { wch: 55 }, { wch: 75 }, { wch: 10 }
             ];
             XLSX.utils.book_append_sheet(wb, wsCombined, "면접 분석 결과");
             const kstToday = new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'Asia/Seoul' }).format(new Date()).replace(/\. /g, '-').replace(/\.$/, '');
@@ -230,7 +258,7 @@ export default function InterviewResultPanel({ initialCandidateId }) {
                     <div className="print-qa-grid p-5 grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
                             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">지원자 답변</p>
-                            <div className="print-answer-box bg-slate-50 p-4 rounded-xl text-slate-700 text-sm leading-relaxed whitespace-pre-wrap border border-slate-100">{a.answer || '답변 없음'}</div>
+                            <AnswerBox summary={a.answerSummary} fullAnswer={a.answer} />
                         </div>
                         <div>
                             <p className={`text-xs font-bold uppercase tracking-wider mb-2 ${isFollowUp ? 'text-amber-600' : 'text-emerald-600'}`}>AI 피드백</p>
