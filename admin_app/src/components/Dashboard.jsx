@@ -14,6 +14,9 @@ const statusConfig = {
     'Completed': { color: 'bg-emerald-100 text-emerald-700 border-emerald-200', label: '완료' },
 };
 
+// Axios 에러에서 서버가 보낸 실제 메시지(e.response.data.error)를 우선 추출, 없으면 Axios 기본 메시지로 폴백
+const getErrorMessage = (e) => e.response?.data?.error ?? e.message;
+
 export default function Dashboard({ onNavigate }) {
     const [candidates, setCandidates] = useState([]);
     const [stats, setStats] = useState({});
@@ -98,7 +101,7 @@ export default function Dashboard({ onNavigate }) {
             showToast('면접 링크가 만료되었습니다.');
             fetchData();
         } catch (e) {
-            showToast('만료 처리 실패: ' + e.message, 'error');
+            showToast('만료 처리 실패: ' + getErrorMessage(e), 'error');
         }
     };
 
@@ -111,7 +114,7 @@ export default function Dashboard({ onNavigate }) {
             const res = await api.get(`/api/interviews/${candidate.interview_token}/result`);
             setModalResultData(res.data);
         } catch (e) {
-            showToast('결과 조회 실패: ' + e.message, 'error');
+            showToast('결과 조회 실패: ' + getErrorMessage(e), 'error');
             setModalCandidate(null);
         } finally {
             setModalLoading(false);
@@ -137,7 +140,7 @@ export default function Dashboard({ onNavigate }) {
             showToast(`${candidate.name} 지원자의 면접이 초기화되었습니다.`);
             fetchData();
         } catch (e) {
-            showToast('초기화 실패: ' + e.message, 'error');
+            showToast('초기화 실패: ' + getErrorMessage(e), 'error');
         }
     };
 
@@ -153,7 +156,7 @@ export default function Dashboard({ onNavigate }) {
             showToast(`${candidate.name} 지원자가 삭제되었습니다.`);
             fetchData();
         } catch (e) {
-            showToast('삭제 실패: ' + e.message, 'error');
+            showToast('삭제 실패: ' + getErrorMessage(e), 'error');
         }
     };
 

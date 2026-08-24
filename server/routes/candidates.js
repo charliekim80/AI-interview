@@ -191,7 +191,7 @@ router.put('/:id', upload.array('resumes', 3), async (req, res) => {
     }
 });
 
-// DELETE /api/candidates/:id — 완전 삭제 (Supabase Storage 파일 포함)
+// DELETE /api/candidates/:id — 완전 삭제 (하위 interviews/surveys + Supabase Storage 파일 포함)
 router.delete('/:id', async (req, res) => {
     try {
         const supabase = await getSupabase();
@@ -199,7 +199,20 @@ router.delete('/:id', async (req, res) => {
         if (fetchErr) throw fetchErr;
         if (!c) return res.status(404).json({ error: '지원자를 찾을 수 없습니다.' });
 
-        // Supabase Storage 파일들 삭제
+        // 1) 연관 interviews 조회 (surveys가 interview_id를 참조하므로 먼저 필요)
+        const { data: interviews, error: ivErr } = await supabase.from('interviews').select('id').eq('candidate_id', req.params.id);
+        if (ivErr) throw ivErr;
+        const interviewIds = (interviews || []).map(i => i.id);
+
+        // 2) surveys → interviews 순으로 하위 데이터 삭제 (candidates 삭제 시 FK 위반 방지)
+        if (interviewIds.length > 0) {
+            const { error: svErr } = await supabase.from('surveys').delete().in('interview_id', interviewIds);
+            if (svErr) throw svErr;
+        }
+        const { error: ivDelErr } = await supabase.from('interviews').delete().eq('candidate_id', req.params.id);
+        if (ivDelErr) throw ivDelErr;
+
+        // 3) Supabase Storage 파일들 삭제 (파일 삭제 실패는 candidates 삭제를 막지 않음)
         if (c.resume_path) {
             try {
                 const paths = JSON.parse(c.resume_path);
@@ -210,8 +223,13 @@ router.delete('/:id', async (req, res) => {
             }
         }
 
-        const { error: delErr } = await supabase.from('candidates').delete().eq('id', req.params.id);
+        // 4) candidates 삭제 — 실제 삭제된 행을 확인해 RLS 등으로 인한 무음(silent) 실패를 차단
+        const { data: deleted, error: delErr } = await supabase
+            .from('candidates').delete().eq('id', req.params.id).select('id');
         if (delErr) throw delErr;
+        if (!deleted || deleted.length === 0) {
+            return res.status(500).json({ error: '삭제 권한이 없거나 이미 삭제된 지원자입니다.' });
+        }
 
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: e.message }); }
